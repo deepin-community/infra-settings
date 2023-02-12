@@ -1,0 +1,52 @@
+---
+
+#- hosts: localhost
+# gather_facts: true
+#  become: yes
+#  roles:
+#    - role: download
+
+- hosts: deploy
+  remote_user: deploy_user
+  gather_facts: yes
+  #become: yes #开启后会使用remote_user=root用户进行操作
+  tasks:
+    - name: Use k3sup tool deploy k3s etcd cluster
+      shell: |
+        set -x
+        if [ -n {{ http_proxy }} ];then
+          export https_proxy={{ http_proxy }}
+          export http_proxy={{ http_proxy }}
+        fi
+        deepinci_cluster={{ groups['etcd_cluster_init'][0] }}
+        k3sup install --host ${deepinci_cluster} --user {{ cluster_deploy_user }} --k3s-envs "INSTALL_K3S_SKIP_DOWNLOAD=true" --cluster --k3s-channel stable --print-command
+
+    - name: Use k3sup tool deploy k3s master servers
+      shell: |
+        set -x
+        if [ -n {{ http_proxy }} ];then
+          export https_proxy={{ http_proxy }}
+          export http_proxy={{ http_proxy }}
+        fi
+        deepinci_cluster={{ groups['etcd_cluster_init'][0] }}
+        if [ ${deepinci_cluster} != {{ item }} ];then
+          k3sup join --host {{ item }} --user {{ cluster_deploy_user }} --k3s-envs "INSTALL_K3S_SKIP_DOWNLOAD=true" --server-ip ${deepinci_cluster} --server-user {{ cluster_deploy_user }} --k3s-channel stable --server --print-command
+        fi
+      with_items:
+        - "{{ groups['master'] }}"
+
+    - name: Use k3sup tool deploy k3s agent servers
+      shell: |
+        set -x
+        if [ -n {{ http_proxy }} ];then
+          export https_proxy={{ http_proxy }}
+          export http_proxy={{ http_proxy }}
+        fi
+        deepinci_cluster={{ groups['etcd_cluster_init'][0] }}
+        k3sup join --host {{ item }} --user {{ cluster_deploy_user }} --k3s-envs "INSTALL_K3S_SKIP_DOWNLOAD=true" --server-ip ${deepinci_cluster} --server-user {{ cluster_deploy_user }} --k3s-channel stable --print-command
+      with_items:
+        - "{{ groups['node'] }}"
+    - debug:
+        msg: "{{ groups['etcd_cluster_init'][0] }}"
+      with_items:
+        - "{{ groups['master'] }}"

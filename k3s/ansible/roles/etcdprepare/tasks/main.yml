@@ -1,0 +1,33 @@
+---
+
+- name: Download etcdctl tar x64
+  get_url:
+    url: https://github.com/etcd-io/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-amd64.tar.gz
+    dest: /usr/local/bin/etcd-{{ etcd_version }}-linux-amd64.tar.gz
+    owner: root
+    group: root
+    mode: 0755
+  when: ansible_facts.architecture == "x86_64"
+
+- name: extract etcdctl tar x64
+  shell: cd /usr/local/bin && tar xf etcd-{{ etcd_version }}-linux-amd64.tar.gz || echo "ignore"
+  when: ansible_facts.architecture == "x86_64"
+
+- name: Download etcdctl tar arm64
+  get_url:
+    url: https://github.com/etcd-io/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-arm64.tar.gz
+    dest: /usr/local/bin/etcd-{{ etcd_version }}-linux-arm64.tar.gz
+    owner: root
+    group: root
+    mode: 0755
+  when:
+    - ( ansible_facts.architecture is search("arm") and
+        ansible_facts.userspace_bits == "64" ) or
+      ansible_facts.architecture is search("aarch64")
+
+- name: extract etcdctl tar arm64
+  shell: cd /usr/local/bin && tar xf etcd-{{ etcd_version }}-linux-arm64.tar.gz || echo "ignore"
+  when:
+    - ( ansible_facts.architecture is search("arm") and
+        ansible_facts.userspace_bits == "64" ) or
+      ansible_facts.architecture is search("aarch64")

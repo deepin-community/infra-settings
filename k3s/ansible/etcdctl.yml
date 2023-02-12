@@ -1,0 +1,6 @@
+---
+
+- hosts: deepinci_cluster
+  become: yes
+  roles:
+    - role: etcdprepare
