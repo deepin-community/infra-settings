@@ -24,4 +24,4 @@ deepin ci/cd 基础设施配置
 - [deepin-cicd sig](https://github.com/deepin-community/SIG/blob/master/sig/deepin-cicd/README.md)
 - [deepin-sysdev-team sig](https://github.com/deepin-community/SIG/blob/master/sig/deepin-sysdev-team/README.md)
 - [deepin-riscv64 sig](https://github.com/deepin-community/SIG/blob/master/sig/deepin-riscv64/README.md)
-- [deepin-virt sig（待创建）]()
+- [deepin-virt sig](https://github.com/deepin-community/SIG/blob/master/sig/deepin-virt/README.md)

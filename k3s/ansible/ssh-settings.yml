@@ -1,0 +1,43 @@
+# ssh-settings.yml
+---
+
+- hosts: deepinci_cluster
+  remote_user: cluster_deploy_user
+  tasks:
+      #不打印日志
+      #no_log: True
+      #局部打印日志
+      #loop_control:
+      #label: ""
+    - name: "1.初始化.ssh目录"
+      file: 'path={{ cluster_deploy_ansible_ssh_path }} state=absent'
+    - name: "2.创建新的.ssh目录"
+      file: 'path={{ cluster_deploy_ansible_ssh_path }}/ state=directory owner={{ cluster_deploy_user }} group={{ cluster_deploy_user }} mode=700 force=yes'
+    - name: "3.生成新的公钥和私钥"
+      shell: |
+        if [ ! -f {{ cluster_deploy_ansible_ssh_path }}/id_rsa ];then
+          ssh-keygen -t rsa -b 2048 -P "" -f {{ cluster_deploy_ansible_ssh_path }}/id_rsa
+        fi
+    - name: "4.拷贝远程公钥到本机"
+      fetch: src={{ cluster_deploy_ansible_ssh_path }}/id_rsa.pub dest={{ deploy_ansible_ssh_path }}/rsa/ force=yes
+    #- name: "5.同步证书到其他主机"
+    #  copy: src={{ deploy_ansible_ssh_path }}/rsa dest={{ cluster_deploy_ansible_ssh_path }}/ mode=0644
+    - name: "5.同步deploy主机证书到其他主机"
+      copy: src={{ deploy_ansible_ssh_path }}/id_rsa.pub dest={{ cluster_deploy_ansible_ssh_path }}/deploy.pub mode=0644
+    #- name: "6.合并密钥"
+    #  shell: cat {{ cluster_deploy_ansible_ssh_path }}/rsa/*{{ cluster_deploy_ansible_ssh_path }}/id_rsa.pub > {{ cluster_deploy_ansible_ssh_path }}/authorized_keys
+    - name: "6.合并deploy主机密钥"
+      shell: cat {{ cluster_deploy_ansible_ssh_path }}/deploy.pub >> {{ cluster_deploy_ansible_ssh_path }}/authorized_keys
+    - name: "7.修改authorized_keys权限为600"
+      shell: chmod 600 {{ cluster_deploy_ansible_ssh_path }}/authorized_keys
+    #- name: "8.添加known_hosts"
+    #  shell: ssh-keyscan {{item}} >> {{ cluster_deploy_ansible_ssh_path }}/known_hosts
+    #  with_items: "{{play_hosts}}"
+    - name: "8.添加deploy主机known_hosts"
+      shell: ssh-keyscan {{item}} >> {{ cluster_deploy_ansible_ssh_path }}/known_hosts
+      with_items: "{{ groups['deploy'] }}"
+    - name: "9. 修改.ssh目录下文件用户组与用户均为cluster_deploy_user"
+      shell: chown -R {{ cluster_deploy_user }}:{{ cluster_deploy_user }} .ssh/
+    - name: "10.清理临时数据"
+      #shell: rm -rf  {{ cluster_deploy_ansible_ssh_path }}/rsa && echo "结束"
+      shell: rm -rf  {{ cluster_deploy_ansible_ssh_path }}/deploy.pub && echo "结束"

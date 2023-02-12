@@ -1,0 +1,76 @@
+---
+- name: Set hostname
+  shell: hostnamectl set-hostname {{ hostname }}
+
+- name: Set SELinux to disabled state
+  selinux:
+    state: disabled
+  when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20']
+
+- name: Enable IPv4 forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    reload: yes
+
+- name: Enable IPv6 forwarding
+  sysctl:
+    name: net.ipv6.conf.all.forwarding
+    value: "1"
+    state: present
+    reload: yes
+  when: ansible_all_ipv6_addresses
+
+- name: Add br_netfilter to /etc/modules-load.d/
+  copy:
+    content: "br_netfilter"
+    dest: /etc/modules-load.d/br_netfilter.conf
+    mode: "u=rw,g=,o="
+  when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20', 'EulerOS', 'openEuler']
+
+- name: Load br_netfilter
+  modprobe:
+    name: br_netfilter
+    state: present
+  when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20', 'EulerOS', 'openEuler']
+
+- name: Set bridge-nf-call-iptables (just to be sure)
+  sysctl:
+    name: "{{ item }}"
+    value: "1"
+    state: present
+    reload: yes
+  when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20', 'EulerOS', 'openEuler']
+  loop:
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables
+
+- name: Add /usr/local/bin to sudo secure_path
+  lineinfile:
+    line: 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin'
+    regexp: "Defaults(\\s)*secure_path(\\s)*="
+    state: present
+    insertafter: EOF
+    path: /etc/sudoers
+    validate: 'visudo -cf %s'
+  when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20', 'EulerOS', 'openEuler']
+
+- name: Install some k3s software
+  shell: |
+    if [ -n {{ http_proxy }} ];then
+      export https_proxy={{ http_proxy }}
+      export http_proxy={{ http_proxy }}
+    fi
+    dnf install -y curl wget python3-setuptools python3-pip container-selinux
+    dnf install -y https://rpm.rancher.io/k3s/stable/common/centos/7/noarch/k3s-selinux-0.4-1.el7.noarch.rpm
+  when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20', 'EulerOS', 'openEuler']
+
+# arm64containerd has problem: https://github.com/k3s-io/k3s/issues/6708 ,use docker instead
+- name: Install docker on arm64
+  shell: yum install -y docker
+  when:
+    - ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux', 'UnionTech OS Server 20', 'EulerOS', 'openEuler'] and
+      ( ansible_facts.architecture is search("arm") and
+        ansible_facts.userspace_bits == "64" ) or
+      ansible_facts.architecture is search("aarch64")
