@@ -1,0 +1,8 @@
+---
+
+- hosts: deepinci_cluster
+  gather_facts: yes
+  become: yes
+  roles:
+    - role: prereq
+    - role: download

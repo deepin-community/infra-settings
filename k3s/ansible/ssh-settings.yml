@@ -1,0 +1,14 @@
+---
+
+- hosts: localhost
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: ssh-copy-id
+      shell:  "ssh-copy-id {{ ansible_user }}@{{ item }}"
+      with_items:
+        - "{{ groups['deepinci_cluster'] }}"
+    #- debug:
+    #    msg: "{{ item }}"
+    #  with_items:
+    #    - "{{ groups['deepinci_cluster'] }}"

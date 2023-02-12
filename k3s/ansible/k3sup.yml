@@ -1,0 +1,29 @@
+---
+
+- hosts: localhost
+  gather_facts: yes
+  become: yes
+  tasks:
+    #- name: Use k3sup tool deploy k3s master servers
+    #  shell:  "deepinci_cluster={{ groups['etcd_cluster_init'] }}
+    #          if [ $deepinci_cluster == {{ itme }} ];then 
+    #            k3sup install --host {{ item }} --user {{ ansible_user }} --cluster --k3s-channel stable --print-command
+    #          else
+    #            k3sup join --host {{ item }} --user {{ ansible_user }} --server-ip $deepinci_cluster --server-user {{ ansible_user }} --k3s-channel stable --server --print-command"
+    #          fi
+    #  with_items:
+    #    - "{{ groups['master'] }}"
+    #- name: Use k3sup tool deploy k3s agent servers
+    #  shell: "k3sup join --host {{ item }} --user {{ ansible_user }} --server-ip $deepinci_cluster --server-user {{ ansible_user }} --k3s-channel stable --print-command"
+    #  with_items:
+    #    - "{{ groups['node'] }}"
+    - debug:
+        msg: "{{ groups['etcd_cluster_init'] }}"
+      with_items:
+        - "{{ groups['master'] }}"
+
+- hosts: localhost
+  gather_facts: yes
+  become: yes
+  roles:
+    - role: download
