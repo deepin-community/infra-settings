@@ -6,6 +6,7 @@ sudo pip3 install ansible
 curl -sLS https://get.k3sup.dev | sh
 sudo install -m 755 k3sup /usr/local/bin/
 rm -r k3sup
+go install github.com/squat/kilo/cmd/kgctl@latest
 
 # ansible工具进行统一的服务器环境准备
 cd ansible/
