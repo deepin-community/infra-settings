@@ -1,0 +1,17 @@
+version: "2.1"
+services:
+  #cache:
+  #  image: registry.opensuse.org/obs/server/unstable/containers/containers/openbuildservice/memcached
+  #  ports:
+  #    - "11211:11211"
+  #  command: /usr/bin/memcached -u memcached
+  frontend:
+    image: hub.deepin.com/k3s/obs/apiv2
+    volumes:
+      - ./obslog:/srv/www/obs/api/log/
+      - ./apachelog:/var/log/apache2/
+    ports:
+      - "8443:443"
+      - "1080:80"
+    #depends_on:
+    #  - cache
