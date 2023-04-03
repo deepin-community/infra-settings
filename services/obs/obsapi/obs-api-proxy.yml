@@ -1,0 +1,67 @@
+---
+# Obs Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-obs-service
+spec:
+  selector:
+    app: nginx-obs
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 443
+    nodePort: 30443
+  type: NodePort
+
+---
+# Obs ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: obsapi-nginx-config
+data:
+  obsapi.conf: |
+    server {
+      listen       443;
+      #server_name  build.deepin.com;
+
+      #access_log  /var/log/nginx/host.access.log  main;
+
+      proxy_pass https://172.16.117.111:443;
+    }
+
+---
+# Obs Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-nginx
+spec:
+  # 理论上数量越多，就可以利用更多的集群资源带宽
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-nginx
+  template:
+    metadata:
+      labels:
+        app: web-nginx
+    spec:
+      containers:
+        - name: web-nginx
+          image: nginx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 443
+          volumeMounts:
+          - name: obsapi-nginx-config
+            mountPath: /etc/nginx/conf.d/default.conf
+            subPath: obsapi.conf
+      volumes:
+        - name: obsapi-nginx-config
+          configMap:
+            name: obsapi-nginx-config
+            items:
+            - key: obsapi.conf
+              path: obsapi.conf
