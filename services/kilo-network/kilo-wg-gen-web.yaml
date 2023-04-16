@@ -39,7 +39,7 @@ spec:
         - --dir=/data
         env:
         - name: NODE
-          value: example
+          value: deepinci-amd1
         - name: ALLOWED_IPS
           value: 10.5.0.0/16
         - name: ADDRESS_POOLS
@@ -47,6 +47,8 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+      nodeSelector:
+        kubernetes.io/arch: amd64
       containers:
       - image: squat/kilo-wg-gen-web
         name: kilo-wg-gen-web
@@ -73,6 +75,8 @@ spec:
         - name: data
           mountPath: /data
       serviceAccountName: kilo-wg-gen-web
+      nodeSelector:
+        kubernetes.io/arch: amd64
   volumeClaimTemplates:
   - metadata:
       labels:
