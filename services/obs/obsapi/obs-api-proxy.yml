@@ -36,20 +36,20 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: web-nginx
+  name: nginx-obs
 spec:
   # 理论上数量越多，就可以利用更多的集群资源带宽
   replicas: 1
   selector:
     matchLabels:
-      app: web-nginx
+      app: nginx-obs
   template:
     metadata:
       labels:
-        app: web-nginx
+        app: nginx-obs
     spec:
       containers:
-        - name: web-nginx
+        - name: nginx-obs
           image: nginx:latest
           imagePullPolicy: IfNotPresent
           ports:
