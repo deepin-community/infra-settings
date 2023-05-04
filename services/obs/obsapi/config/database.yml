@@ -9,8 +9,8 @@
 production:
   adapter: mysql2
   database: api_production
-  username: "***"
-  password: "***"
+  username: obs
+  password: obs
   encoding: utf8mb4
   collation: utf8mb4_unicode_ci
   host: 172.16.117.111
@@ -25,7 +25,7 @@ development:
   password: obs
   encoding: utf8mb4
   collation: utf8mb4_unicode_ci
-  host: 172.16.117.111
+  host: 10.20.64.72
   port: 3306
   timeout: 15
   pool: 30
@@ -40,7 +40,7 @@ test:
   password: obs
   encoding: utf8mb4
   collation: utf8mb4_unicode_ci
-  host: 172.16.117.111
+  host: 10.20.64.72
   port: 3306
   timeout: 15
   pool: 30
