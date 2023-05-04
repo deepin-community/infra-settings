@@ -1,0 +1,512 @@
+---
+# Obs Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: obs-api
+spec:
+  selector:
+    app: obs-api
+  ports:
+  - protocol: TCP
+    port: 30443
+    targetPort: 30443
+    nodePort: 30443
+  type: NodePort
+
+---
+# Obs Apache ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: obsapi-apache-config
+data:
+  obs.conf: |
+    #Listen 82
+    # May needed on old distributions or after an update from them.
+    Listen 30443
+
+    # Passenger defaults
+    PassengerSpawnMethod "smart"
+    PassengerMaxPoolSize 20
+    #RailsEnv "development"
+
+    # allow long request urls and being part of headers
+    LimitRequestLine 20000
+    LimitRequestFieldsize 20000
+
+    # Just the overview page
+    #<VirtualHost 172.16.117.111:80>
+    #        # just give an overview about this OBS instance via static web page
+    #        DocumentRoot  "/srv/www/obs/overview"
+    #
+    #        <Directory /srv/www/obs/overview>
+    #           Options Indexes
+    #           Require all granted
+    #        </Directory>
+    #</VirtualHost>
+
+
+    # Build Results
+    #<VirtualHost 172.16.117.111:82>
+    #        # The resulting repositories
+    #        DocumentRoot  "/srv/obs/repos"
+    #
+    #        <Directory /srv/obs/repos>
+    #           Options Indexes FollowSymLinks
+    #           Require all granted
+    #        </Directory>
+    #</VirtualHost>
+
+
+    # OBS WEBUI & API
+    <VirtualHost *:30443>
+            ServerName build.deepin.com
+            # ServerName localhost
+
+            #  General setup for the virtual host
+            DocumentRoot  "/srv/www/obs/api/public"
+            PassengerFriendlyErrorPages on
+            ErrorLog /srv/www/obs/api/log/apache_error.log
+            TransferLog /srv/www/obs/api/log/apache_access.log
+
+            # Enable maintenance mode. All requests will be redirected
+            # to the maintenance page and return 503 as http status.
+            # Start your apache with -D MAINTENANCE to enable this.
+            # On (open)SUSE you can do this by setting
+            # APACHE_SERVER_FLAGS="MAINTENANCE" in /etc/sysconfig/apache
+            <IfDefine MAINTENANCE>
+              ErrorDocument 503 /503.html
+              RewriteEngine on
+              RewriteCond %{REQUEST_URI} !=/503.html
+              RewriteCond %{REQUEST_URI} !=/obs-down.png
+              RewriteRule ^ - [R=503,L]
+            </IfDefine>
+
+            PassengerMinInstances 2
+            PassengerPreStart https://localhost
+
+            SSLEngine on
+
+            #  SSL protocols
+            #  Supporting TLS only is adequate nowadays
+            SSLProtocol all -SSLv2 -SSLv3
+
+            #   SSL Cipher Suite:
+            #   List the ciphers that the client is permitted to negotiate.
+            #   We disable weak ciphers by default.
+            #   See the mod_ssl documentation or "openssl ciphers -v" for a
+            #   complete list.
+            SSLCipherSuite ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!MD5:@STRENGTH
+
+            SSLCertificateFile    /srv/obs/certs/server.crt
+            SSLCertificateKeyFile /srv/obs/certs/server.key
+
+            <Directory /srv/www/obs/api/public>
+              AllowOverride all
+              Options -MultiViews
+
+              # This requires mod_xforward loaded in apache
+              # Enable the usage via options.yml
+              # This will decrease the load due to long running requests a lot (unloading from rails stack)
+              XForward on
+
+              Require all granted
+            </Directory>
+
+            SetEnvIf User-Agent ".*MSIE [1-5].*" \
+              nokeepalive ssl-unclean-shutdown \
+              downgrade-1.0 force-response-1.0
+
+            CustomLog /var/log/apache2/ssl_request_log   ssl_combined
+
+            # Make sure the browser supports gzip encoding before we send it
+            RewriteCond %{HTTP:Accept-Encoding} \b(x-)?gzip\b
+            RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}\.gz" -s
+            RewriteRule "^(.*)\.(css|eot|ico|js|svg|ttf)"         "$1\.$2\.gz" [QSA]
+
+            # Serve correct content types, and prevent mod_deflate double gzip.
+            RewriteRule "\.css\.gz$"  "-" [T=text/css,E=no-gzip:1]
+            RewriteRule "\.eot\.gz$"  "-" [T=application/vnd.ms-fontobject,E=no-gzip:1]
+            RewriteRule "\.ico\.gz$"  "-" [T=image/x-icon,E=no-gzip:1]
+            RewriteRule "\.js\.gz$"   "-" [T=text/javascript,E=no-gzip:1]
+            RewriteRule "\.svg\.gz$"  "-" [T=image/svg+xml,E=no-gzip:1]
+            RewriteRule "\.ttf\.gz$"  "-" [T=application/x-font-ttf,E=no-gzip:1]
+
+            <FilesMatch "\.(css|eot|ico|js|svg|ttf)\.gz$">
+              # Serve correct encoding type.
+              Header append Content-Encoding gzip
+
+              # Force proxies to cache gzipped &
+              # non-gzipped css/js files separately.
+              Header append Vary Accept-Encoding
+            </FilesMatch>
+
+            # from http://guides.rubyonrails.org/asset_pipeline.html
+            <LocationMatch "^/assets/.*$">
+              Header unset ETag
+              FileETag None
+              # RFC says only cache for 1 year
+              ExpiresActive On
+              ExpiresDefault "access plus 1 year"
+            </LocationMatch>
+
+            SetEnvIf User-Agent ".*MSIE [1-5].*" \
+              nokeepalive ssl-unclean-shutdown \
+              downgrade-1.0 force-response-1.0
+
+            ## Older firefox versions needs this, otherwise it wont cache anything over SSL.
+            Header append Cache-Control "public"
+
+            ProxyPass /v2 http://localhost:5352/registry
+            ProxyPassReverse /v2 http://localhost:5352/registry
+            ProxyPass /sigstore http://localhost:5352/sigstore
+            ProxyPassReverse /sigstore http://localhost:5352/sigstore
+            ProxyPass /extensions/v2 http://localhost:5352/registry
+            ProxyPassReverse /extensions/v2 http://localhost:5352/registry
+    </VirtualHost>
+
+---
+# Obs Database ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: obsapi-db-config
+data:
+  database.yml: |
+    # MySQL (default setup).  Versions 4.1 and 5.0 are recommended.
+    #
+    # Get the fast C bindings:
+    #   gem install mysql
+    #   (on OS X: gem install mysql -- --include=/usr/local/lib)
+    # And be sure to use new-style password hashing:
+    #   http://dev.mysql.com/doc/refman/5.0/en/old-client.html
+
+    production:
+      adapter: mysql2
+      database: api_production
+      username: ***
+      password: ***
+      encoding: utf8mb4
+      collation: utf8mb4_unicode_ci
+      host: 10.20.64.72
+      port: 3306
+      timeout: 15
+      pool: 30
+
+    development:
+      adapter: mysql2
+      database: api_development
+      username: obs
+      password: obs
+      encoding: utf8mb4
+      collation: utf8mb4_unicode_ci
+      host: 10.20.64.72
+      port: 3306
+      timeout: 15
+      pool: 30
+
+    # Warning: The database defined as 'test' will be erased and
+    # re-generated from your development database when you run 'rails'.
+    # Do not set this db to the same as development or production.
+    test:
+      adapter: mysql2
+      database: api_test
+      username: obs
+      password: obs
+      encoding: utf8mb4
+      collation: utf8mb4_unicode_ci
+      host: 10.20.64.72
+      port: 3306
+      timeout: 15
+      pool: 30
+
+---
+# Obs Options ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: obsapi-options-config
+data:
+  options.yml: |
+    #
+    # This file contains the default configuration of the Open Build Service API.
+    #
+
+    default: &default
+      #read_only_hosts: [ "build.opensuse.org", "software.opensuse.org" ]
+
+      # Make use of mod_xforward module in apache
+      #use_xforward: true
+
+      # Make use of X-Accel-Redirect for Nginx.
+      # http://kovyrin.net/2010/07/24/nginx-fu-x-accel-redirect-remote
+      #use_nginx_redirect: /internal_redirect
+
+      # Set to true to verify XML reponses comply to the schema
+      response_schema_validation: false
+
+      # backend source server
+      source_host: 10.20.64.72
+      # NOTE: the source_port setting is ignored and hardcoded for "test" and "development" env
+      source_port: 5352
+      #source_protocol: https
+      #source_protocol_ssl_verification: false
+
+      # api access to this instance
+      frontend_host: localhost
+      frontend_port: 30443
+      frontend_protocol: https
+
+      extended_backend_log: false
+
+      # proxy_auth_mode can be :off or :on
+      proxy_auth_mode: :off
+
+      # ATTENTION: If proxy_auth_mode'is :on, the frontend takes the user
+      # name that is coming as headervalue X-username as a
+      # valid user does no further authentication. So take care...
+      proxy_auth_test_user: coolguy
+      proxy_auth_test_email: coolguy@example.com
+
+      ### Kerberos configuration
+
+      # can be true or false
+      kerberos_mode: false
+
+      #kerberos_keytab: "/etc/krb5.keytab"
+      #kerberos_service_principal: "HTTP/hostname.example.com@EXAMPLE.COM"
+      #kerberos_realm: "EXAMPLE.COM"
+
+
+      #schema_location
+
+      #version
+
+      # if set to false, the API will only fake writes to backend (useful in testing)
+      # global_write_through: true
+
+      # see http://colszowka.heroku.com/2011/02/22/setting-up-your-custom-hoptoad-notifier-endpoint-for-free-using-errbit-on-heroku
+      #errbit_api_key: api_key_of_your_app
+      #errbit_project_id:
+      #errbit_host: installation.of.errbit.com
+
+      ##################
+      # LDAP options
+      ##################
+
+      #### WARNING: LDAP mode is not official supported by OBS!
+      ldap_mode: :off
+      #### WARNING: LDAP mode is not official supported by OBS!
+
+      # LDAP Servers separated by ':'.
+      # OVERRIDE with your company's ldap servers. Servers are picked randomly for
+      # each connection to distribute load.
+      ldap_servers: ldap1.mycompany.com:ldap2.mycompany.com
+
+      # Max number of times to attempt to contact the LDAP servers
+      ldap_max_attempts: 15
+
+      # The attribute the user memberof is stored in
+      ldap_user_memberof_attr: memberof
+
+      # Perform the group_user search with the member attribute of group entry or memberof attribute of user entry
+      # It depends on your ldap define
+      # The attribute the group member is stored in
+      ldap_group_member_attr: member
+
+      # If you're using ldap_authenticate=:ldap then you should ensure that
+      # ldaps is used to transfer the credentials over SSL or use the StartTLS extension
+      ldap_ssl: :on
+
+      # Use StartTLS extension of LDAP
+      ldap_start_tls: :off
+
+      # LDAP port defaults to 636 for ldaps and 389 for ldap and ldap with StartTLS
+      #ldap_port:
+      # Authentication with Windows 2003 AD requires
+      ldap_referrals: :off
+
+      # OVERRIDE with your company's ldap search base for the users who will use OBS
+      ldap_search_base: OU=Organizational Unit,DC=Domain Component
+      # Sam Account Name is the login name for LDAP
+      ldap_search_attr: sAMAccountName
+      # The attribute the users name is stored in
+      ldap_name_attr: cn
+      # The attribute the users email is stored in
+      ldap_mail_attr: mail
+      # Credentials to use to search ldap for the username
+      ldap_search_user: ""
+      ldap_search_auth: ""
+
+      # By default any LDAP user can be used to authenticate to the OBS
+      # In some deployments this may be too broad and certain criteria should
+      # be met; eg group membership
+      #
+      # To allow only users in a specific group uncomment this line:
+      #ldap_user_filter: (memberof=CN=group,OU=Groups,DC=Domain Component)
+      #
+      # Note this is joined to the normal selection like so:
+      # (&(#{ldap_search_attr}=#{login})#{ldap_user_filter})
+      # giving an ldap search of:
+      #  (&(sAMAccountName=#{login})(memberof=CN=group,OU=Groups,DC=Domain Component))
+      #
+      # Also note that openLDAP must be configured to use the memberOf overlay
+
+      # ldap_authenticate says how the credentials are verified:
+      #   :ldap = attempt to bind to ldap as user using supplied credentials
+      #   :local = compare the credentials supplied with those in
+      #            LDAP using #{ldap_auth_attr} & #{ldap_auth_mech}
+      #       if :local is used then ldap_auth_mech can be
+      #       :md5
+      #       :cleartext
+      ldap_authenticate: :ldap
+      ldap_auth_mech: :md5
+      # This is a string
+      ldap_auth_attr: userPassword
+
+      # Whether to search group info from ldap, it does not take effect
+      # when LDAP_GROUP_SUPPOR is not set.
+      # Please also set below LDAP_GROUP_* configs correctly to ensure the operation works properly
+      ldap_group_support: :off
+      # OVERRIDE with your company's ldap search base for groups
+      ldap_group_search_base: ou=OBSGROUPS,dc=EXAMPLE,dc=COM
+      # The attribute the group name is stored in
+      ldap_group_title_attr: cn
+      # The value of the group objectclass attribute, leave it as "" if objectclass attr doesn't exist
+      ldap_group_objectclass_attr: groupOfNames
+
+      # Data to locate the database backup
+      # Will be used in the script/import_database.rb script
+      backup_server: foo.bar
+      backup_user: tux
+      backup_location: /home/tux
+      backup_filename: obs_production.sql.xz
+      backup_port: 22
+
+      # Rabbitmq based message bus
+      #
+      # Prefix of the message bus rooting key
+      # amqp_namespace: 'opensuse.obs'
+      #
+      # Connection options -> http://rubybunny.info/articles/connecting.html
+      # amqp_options:
+      #   host: rabbit.example.com
+      #   port: 5672
+      #   user: guest
+      #   pass: guest
+      #   vhost: vhost
+      #
+      # Exchange options -> http://rubybunny.info/articles/exchanges.html
+      # amqp_exchange_name: pubsub
+      # amqp_exchange_options:
+      #  type: :topic
+      #  auto_delete: false
+      #  arguments:
+      #    persistent: true
+      #    passive: true
+
+      # For sending application performance metrics to a influx time series database
+      # influxdb_database: rails
+      # influxdb_username: rails
+      # influxdb_password: 123456
+      # influxdb_hosts:
+      #  - domain.tld
+      # influxdb_port: 8086
+      # influxdb_ssl: true
+      # influxdb_retry: 10
+      # influxdb_time_precision: ms
+
+      # Disable the contribution graph on the user home page
+      # contribution_graph: :off
+
+      # Display sponsors above the footer on every page
+      # sponsors:
+      # - name: Sponsor ABC
+      #   description: We are the best at ABC
+      #   icon: sponsor_abc
+      #   url: https://www.example.com
+
+      # Lifetime for repositories published after accepting maintenance release requests.
+      # Default: 2 days (172800 seconds).
+      # maintenance_release_repositories_lifetime: 172800
+
+      # Lifetime for notifications.
+      # Default: 365 days (1 year).
+      notifications_lifetime: 365
+
+      # Prevent adding the user as a maintainer, in project creation, in this API endpoint:
+      # PUT /source/:project/_meta
+      # Former and default value is `false`: the user is added as a maintainer.
+      prevent_adding_maintainer_in_project_creation_with_api: false
+
+    production:
+      <<: *default
+      # memcached_host: 172.16.117.111
+
+    test:
+      <<: *default
+      source_host: backend
+      memcached_host: cache
+
+    development:
+      <<: *default
+      source_host: 10.20.64.72
+      #memcached_host: cache
+    # This is to prevent fdupes from hardlinking
+
+---
+# Obs Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obs-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: obs-api
+  template:
+    metadata:
+      labels:
+        app: obs-api
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: obs-api
+          image: hub.deepin.com/k3s/obs/apiv3:latest
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 30443
+          volumeMounts:
+          - name: obsapi-apache-config
+            mountPath: /etc/apache2/vhosts.d/obs.conf
+            subPath: obs.conf
+          - name: obsapi-db-config
+            mountPath: /srv/www/obs/api/config/database.yml
+            subPath: database.yml
+          - name: obsapi-options-config
+            mountPath: /srv/www/obs/api/config/options.yml
+            subPath: options.yml
+      volumes:
+        - name: obsapi-apache-config
+          configMap:
+            name: obsapi-apache-config
+            items:
+            - key: obs.conf
+              path: obs.conf
+        - name: obsapi-db-config
+          configMap:
+            name: obsapi-db-config
+            items:
+            - key: database.yml
+              path: database.yml
+        - name: obsapi-options-config
+          configMap:
+            name: obsapi-options-config
+            items:
+            - key: options.yml
+              path: options.yml
+      imagePullSecrets:
+        - name: deepinhub

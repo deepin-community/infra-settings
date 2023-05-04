@@ -211,6 +211,7 @@ default: &default
 
 production:
   <<: *default
+  memcached_host: 172.16.117.111
 
 test:
   <<: *default
@@ -219,6 +220,6 @@ test:
 
 development:
   <<: *default
-  source_host: backend
-  memcached_host: cache
+  source_host: 10.20.64.72
+  #memcached_host: cache
 # This is to prevent fdupes from hardlinking

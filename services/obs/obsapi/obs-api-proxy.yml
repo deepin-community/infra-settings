@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-obs-service
+  name: nginx-obs
 spec:
   selector:
     app: nginx-obs
