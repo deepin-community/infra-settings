@@ -6,12 +6,11 @@ services:
   #    - "11211:11211"
   #  command: /usr/bin/memcached -u memcached
   frontend:
-    image: hub.deepin.com/k3s/obs/apiv3
+    image: hub.deepin.com/k3s/obs/apiv3:1.0.0
     volumes:
       - ./obslog:/srv/www/obs/api/log/
       - ./apachelog:/var/log/apache2/
     ports:
-      - "443:443"
-      - "80:80"
+      - "30443:30443"
     #depends_on:
     #  - cache
