@@ -1,0 +1,49 @@
+From 2702a735d322a873cb042f0b6f8d45a0305a828f Mon Sep 17 00:00:00 2001
+From: Liu Heng <liuheng@deepin.org>
+Date: Tue, 10 Jan 2023 15:00:12 +0800
+Subject: [PATCH] feat: add topic
+
+When the submitter of the pull request starts with a topic,
+OBS creates the corresponding topic project and puts the packages of the same
+topic in the same project
+
+log:
+---
+ src/api/app/models/workflow/step.rb | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/src/api/app/models/workflow/step.rb b/src/api/app/models/workflow/step.rb
+index cb74c60c8f..f6e5ed6e12 100644
+--- a/src/api/app/models/workflow/step.rb
++++ b/src/api/app/models/workflow/step.rb
+@@ -29,8 +29,15 @@ class Workflow::Step
+                          else
+                            scm_webhook.payload[:path_with_namespace]&.tr('/', ':')
+                          end
+-
+-    "#{target_project_base_name}:#{pr_subproject_name}:PR-#{scm_webhook.payload[:pr_number]}"
++    # use for deepin
++    allow_topic_feature = scm_webhook.payload[:target_repository_full_name].start_with?("linuxdeepin/", "deepin-community/","peeweep-test/")
++    source_branch_name = scm_webhook.payload[:source_branch]
++
++    if allow_topic_feature && source_branch_name.start_with?("topic-")
++      "#{target_project_base_name}:topics:#{source_branch_name[6..]}"
++    else
++      "#{target_project_base_name}:#{pr_subproject_name}:PR-#{scm_webhook.payload[:pr_number]}"
++    end
+   end
+ 
+   def target_package
+@@ -127,7 +134,8 @@ class Workflow::Step
+           repo: { full_name: scm_webhook.payload[:source_repository_full_name] },
+           sha: scm_webhook.payload[:commit_sha]
+         }
+-      }
++      },
++      target_repository_full_name: scm_webhook.payload[:target_repository_full_name]
+     }.to_json
+   end
+ 
+-- 
+2.20.1
+
