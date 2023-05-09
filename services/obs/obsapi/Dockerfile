@@ -25,8 +25,6 @@ ADD config/obs.conf /etc/apache2/vhosts.d/obs.conf
 ADD config/apache2 /etc/sysconfig/apache2
 ADD config/options.yml /srv/www/obs/api/config/options.yml
 ADD config/database.yml /srv/www/obs/api/config/database.yml
-ADD config/certs/server.crt /srv/obs/certs/server.crt
-ADD config/certs/server.key /srv/obs/certs/server.key
 
 # setup github access proxy
 RUN cd /tmp && wget https://github.com/go-gost/gost/releases/download/v3.0.0-rc6/gost_3.0.0-rc6_linux_amd64.tar.gz && \

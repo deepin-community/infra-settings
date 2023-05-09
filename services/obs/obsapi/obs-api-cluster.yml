@@ -61,8 +61,8 @@ data:
 
     # OBS WEBUI & API
     <VirtualHost *:30443>
-            ServerName build.deepin.com
-            # ServerName localhost
+            #ServerName localhosts
+            ServerName build1.deepin.com
 
             #  General setup for the virtual host
             DocumentRoot  "/srv/www/obs/api/public"
@@ -86,21 +86,21 @@ data:
             PassengerMinInstances 2
             PassengerPreStart https://localhost
 
-            SSLEngine on
+            #SSLEngine on
 
             #  SSL protocols
             #  Supporting TLS only is adequate nowadays
-            SSLProtocol all -SSLv2 -SSLv3
+            # SSLProtocol all -SSLv2 -SSLv3
 
             #   SSL Cipher Suite:
             #   List the ciphers that the client is permitted to negotiate.
             #   We disable weak ciphers by default.
             #   See the mod_ssl documentation or "openssl ciphers -v" for a
             #   complete list.
-            SSLCipherSuite ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!MD5:@STRENGTH
+            #SSLCipherSuite ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!MD5:@STRENGTH
 
-            SSLCertificateFile    /srv/obs/certs/server.crt
-            SSLCertificateKeyFile /srv/obs/certs/server.key
+            #SSLCertificateFile    /srv/obs/certs/server.crt
+            #SSLCertificateKeyFile /srv/obs/certs/server.key
 
             <Directory /srv/www/obs/api/public>
               AllowOverride all
