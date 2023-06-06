@@ -48,6 +48,11 @@ data:
         - wip
         - yuks
         - welcome
+    triggers:
+    - repos:
+      - peeweep-test
+      - deepin-community
+      trigger_github_workflows: true
     owners:
       filenames:
         deepin-community:
