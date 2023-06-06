@@ -31,6 +31,41 @@ data:
         - verify-owners
         - wip
         - yuks
+      peeweep-test:
+        plugins:
+        - approve
+        - assign
+        - blunderbuss
+        - cat
+        - dog
+        - help
+        - heart
+        - hold
+        - label
+        - lgtm
+        - trigger
+        - verify-owners
+        - wip
+        - yuks
+        - welcome
+    owners:
+      filenames:
+        deepin-community:
+          owners: 'OWNERS'
+          owners_aliases: 'OWNERS_ALIASES'
+          owners_file_path: 'debian/deepin'
+        peeweep-test:
+          owners: 'OWNERS'
+          owners_aliases: 'OWNERS_ALIASES'
+          owners_file_path: 'debian/deepin'
+    welcome:
+    - repos:
+      - deepin-community
+      - peeweep-test
+      # MessageTemplate is the welcome message template to post on new-contributor PRs
+      # For the info struct see prow/plugins/welcome/welcome.go's PRInfo
+      message_template: "Hi @{{.AuthorLogin}}. Thanks for your PR.:smiley:"
+
 ---
 apiVersion: v1
 kind: Secret
@@ -151,6 +186,8 @@ spec:
       labels:
         app: hook
     spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
       serviceAccountName: "hook"
       terminationGracePeriodSeconds: 180
       hostAliases:
@@ -965,6 +1002,9 @@ spec:
       - ip: "10.20.64.86"
         hostnames:
         - "avatars.githubusercontent.com"
+      - ip: "10.20.64.41"
+        hostnames:
+        - "deepinci-pushgateway.deepin.org"
       nodeSelector:
         kubernetes.io/arch: amd64
       containers:
@@ -973,7 +1013,7 @@ spec:
         args:
         - --cache-dir=/cache
         - --cache-sizeGB=99
-        - --push-gateway=pushgateway
+        - --push-gateway=deepinci-pushgateway.deepin.org
         - --serve-metrics=true
         ports:
         - containerPort: 8888
