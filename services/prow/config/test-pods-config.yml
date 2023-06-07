@@ -1,0 +1,176 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: plugins
+data:
+  plugins.yaml: |
+    plugins:
+      deepin-community:
+        plugins:
+        - approve
+        - assign
+        - blunderbuss
+        - cat
+        - dog
+        - help
+        - heart
+        - hold
+        - label
+        - lgtm
+        - trigger
+        - verify-owners
+        - wip
+        - yuks
+      peeweep-test:
+        plugins:
+        - approve
+        - assign
+        - blunderbuss
+        - cat
+        - dog
+        - help
+        - heart
+        - hold
+        - label
+        - lgtm
+        - trigger
+        - verify-owners
+        - wip
+        - yuks
+        - welcome
+    triggers:
+    - repos:
+      - peeweep-test
+      - deepin-community
+      trigger_github_workflows: true
+    owners:
+      filenames:
+        deepin-community:
+          owners: 'OWNERS'
+          owners_aliases: 'OWNERS_ALIASES'
+          owners_file_path: 'debian/deepin'
+        peeweep-test:
+          owners: 'OWNERS'
+          owners_aliases: 'OWNERS_ALIASES'
+          owners_file_path: 'debian/deepin'
+    welcome:
+    - repos:
+      - deepin-community
+      - peeweep-test
+      # MessageTemplate is the welcome message template to post on new-contributor PRs
+      # For the info struct see prow/plugins/welcome/welcome.go's PRInfo
+      message_template: "Hi @{{.AuthorLogin}}. Thanks for your PR.:smiley:"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: github-token
+stringData:
+  cert: |
+    ""
+  appid: "229710"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: default
+  name: hmac-token
+stringData:
+  # Generate via `openssl rand -hex 20`. This is the secret used in the GitHub webhook configuration
+  hmac: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: config
+data:
+  config.yaml: |
+    prowjob_namespace: default
+    pod_namespace: test-pods
+
+    in_repo_config:
+      enabled:
+        "*": true
+
+    deck:
+     spyglass:
+       lenses:
+       - lens:
+           name: metadata
+         required_files:
+         - started.json|finished.json
+       - lens:
+           config:
+           name: buildlog
+         required_files:
+         - build-log.txt
+       - lens:
+           name: junit
+         required_files:
+         - .*/junit.*\.xml
+       - lens:
+           name: podinfo
+         required_files:
+         - podinfo.json
+
+    plank:
+      job_url_prefix_config:
+        "*": https://prow.deepin.org/view/
+      report_templates:
+        '*': >-
+            [Full PR test history](https://prow.deepin.org/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).
+            [Your PR dashboard](https://prow.deepin.org/pr?query=is:pr+state:open+author:{{with
+            index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}).
+      default_decoration_configs:
+        "*":
+          gcs_configuration:
+            bucket: s3://prow-logs
+            path_strategy: explicit
+          s3_credentials_secret: s3-credentials
+          utility_images:
+            clonerefs: hub.deepin.com/prow/clonerefs
+            entrypoint: hub.deepin.com/prow/entrypoint
+            initupload: hub.deepin.com/prow/initupload
+            sidecar: hub.deepin.com/prow/sidecar
+
+    branch-protection:
+      orgs:
+        peeweep-test:
+          protect: true
+          exclude:
+            - "^revert-" # don't protect revert branches
+            - "^dependabot/" # don't protect branches created by dependabot
+            - "^greenkeeper/" # don't protect branches created by greenkeeper
+        deepin-community:
+          protect: true
+          exclude:
+            - "^revert-" # don't protect revert branches
+            - "^dependabot/" # don't protect branches created by dependabot
+            - "^greenkeeper/" # don't protect branches created by greenkeeper
+
+    tide:
+      queries:
+      - labels:
+        - lgtm
+        - approved
+        missingLabels:
+        - needs-rebase
+        - do-not-merge/hold
+        - do-not-merge/work-in-progress
+        - do-not-merge/invalid-owners-file
+        orgs:
+        - deepin-community
+
+    decorate_all_jobs: true
+    #periodics:
+    #- interval: 1m
+    #  agent: kubernetes
+    #  name: echo-test
+    #  spec:
+    #    containers:
+    #    - image: alpine
+    #      command: ["/bin/date"]
