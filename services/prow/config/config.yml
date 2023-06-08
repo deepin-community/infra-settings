@@ -1,0 +1,85 @@
+prowjob_namespace: prow
+pod_namespace: test-pods
+
+in_repo_config:
+  enabled:
+    "*": true
+
+deck:
+ spyglass:
+   lenses:
+   - lens:
+       name: metadata
+     required_files:
+     - started.json|finished.json
+   - lens:
+       config:
+       name: buildlog
+     required_files:
+     - build-log.txt
+   - lens:
+       name: junit
+     required_files:
+     - .*/junit.*\.xml
+   - lens:
+       name: podinfo
+     required_files:
+     - podinfo.json
+
+plank:
+  job_url_prefix_config:
+    "*": https://prow.deepin.org/view/
+  report_templates:
+    '*': >-
+        [Full PR test history](https://prow.deepin.org/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).
+        [Your PR dashboard](https://prow.deepin.org/pr?query=is:pr+state:open+author:{{with
+        index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}).
+  default_decoration_configs:
+    "*":
+      gcs_configuration:
+        bucket: s3://prow-logs
+        path_strategy: explicit
+      s3_credentials_secret: s3-credentials
+      utility_images:
+        clonerefs: hub.deepin.com/prow/clonerefs
+        entrypoint: hub.deepin.com/prow/entrypoint
+        initupload: hub.deepin.com/prow/initupload
+        sidecar: hub.deepin.com/prow/sidecar
+
+branch-protection:
+  orgs:
+    peeweep-test:
+      protect: true
+      exclude:
+        - "^revert-" # don't protect revert branches
+        - "^dependabot/" # don't protect branches created by dependabot
+        - "^greenkeeper/" # don't protect branches created by greenkeeper
+    deepin-community:
+      protect: true
+      exclude:
+        - "^revert-" # don't protect revert branches
+        - "^dependabot/" # don't protect branches created by dependabot
+        - "^greenkeeper/" # don't protect branches created by greenkeeper
+
+tide:
+  queries:
+  - labels:
+    - lgtm
+    - approved
+    missingLabels:
+    - needs-rebase
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - do-not-merge/invalid-owners-file
+    orgs:
+    - deepin-community
+
+decorate_all_jobs: true
+#periodics:
+#- interval: 1m
+#  agent: kubernetes
+#  name: echo-test
+#  spec:
+#    containers:
+#    - image: alpine
+#      command: ["/bin/date"]
