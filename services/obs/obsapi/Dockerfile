@@ -10,7 +10,7 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/non-oss/' mirror-update-non-oss;
 
 RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.4/OBS:Server:Unstable.repo; \
-  zypper -n install obs-api apache2 apache2-mod_xforward rubygem-passenger-apache2 memcached patch vim wget gzip; zypper clean;
+  zypper -n install obs-api apache2 apache2-mod_xforward rubygem-passenger-apache2 memcached patch vim wget gzip sudo; zypper clean;
 
 # setup obs-api configuration
 RUN mkdir -p /srv/backup/; \
