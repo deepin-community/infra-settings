@@ -1,0 +1,6 @@
+version: "2.1"
+services:
+  srcserver:
+    image: hub.deepin.com/k3s/obs/scheduler
+    volumes:
+      - ./obsschedulerdata:/srv/obs/
