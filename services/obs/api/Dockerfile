@@ -21,11 +21,11 @@ RUN mkdir -p /srv/backup/; \
   sed -i "s#/ruby#/ruby.ruby3.1#g" /etc/apache2/conf.d/mod_passenger.conf; \
   mkdir -p /srv/obs/repos /run/passenger /patches;
 
-ADD config/obs.conf /etc/apache2/vhosts.d/obs.conf
-ADD config/apache2 /etc/sysconfig/apache2
-ADD config/options.yml /srv/www/obs/api/config/options.yml
-ADD config/database.yml /srv/www/obs/api/config/database.yml
-ADD patches/0001-feat-add-topic.patch /patches/0001-feat-add-topic.patch
+ADD api/config/obs.conf /etc/apache2/vhosts.d/obs.conf
+ADD api/config/apache2 /etc/sysconfig/apache2
+ADD api/config/options.yml /srv/www/obs/api/config/options.yml
+ADD api/config/database.yml /srv/www/obs/api/config/database.yml
+ADD api/patches/0001-feat-add-topic.patch /patches/0001-feat-add-topic.patch
 
 #use topic support patch
 RUN patch -p0 /srv/www/obs/api/app/models/workflow/step.rb /patches/0001-feat-add-topic.patch
@@ -38,6 +38,6 @@ WORKDIR /srv/www/obs/api
 
 VOLUME [ "/srv/www/obs/api/log/", "/var/cache/apache2/" ]
 
-ADD entrypoint.sh /entrypoint.sh
+ADD api/entrypoint.sh /entrypoint.sh
 
 CMD ["/bin/bash", "/entrypoint.sh"]

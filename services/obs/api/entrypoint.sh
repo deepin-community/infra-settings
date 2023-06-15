@@ -1,8 +1,13 @@
 #!/bin/bash
-chown wwwrun:www /srv/www/obs/api/log
-chmod 777 -R /srv/www/obs/api/log
+# obs db config
+sudo RAILS_ENV="production" rake db:setup
+sudo RAILS_ENV="production" rake writeconfiguration
+
+chown -R wwwrun:www /srv/www/obs/api/log /srv/www/obs/api/tmp
+chmod 777 -R /srv/www/obs/api/log /srv/www/obs/api/tmp
 # /usr/bin/memcached -u memcached -l 127.0.0.1 &
 # sleep 20
+
 apache2ctl -D FOREGROUND &
 export RAILS_ENV=production
 sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec /srv/www/obs/api/script/delayed_job.api.rb --queue=default start -i 1030 &
