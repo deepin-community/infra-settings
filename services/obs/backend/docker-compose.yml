@@ -1,0 +1,8 @@
+version: "2.1"
+services:
+  srcserver:
+    image: hub.deepin.com/k3s/obs/backend
+    volumes:
+      - ./obsbackenddata:/srv/obs/
+    ports:
+      - "5152:5152"
