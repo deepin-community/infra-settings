@@ -2248,3 +2248,32 @@ spec:
     port: 32515
     targetPort: 32515
   type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: obs
+  name: obs
+  annotations:
+    # Change this to your issuer when using cert-manager. Does
+    # nothing when not using cert-manager.
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+spec:
+  defaultBackend:
+    # specify the default backend for `ingress-gce` (https://cloud.google.com/kubernetes-engine/docs/concepts/ingress#default_backend)
+    service:
+      name: api
+      port:
+        number: 30443
+  rules:
+  - host: build-test.deepin.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api
+            port:
+              number: 30443
