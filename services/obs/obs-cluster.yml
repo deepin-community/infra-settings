@@ -1,0 +1,2250 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: obs
+---
+# Obs Apache ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: api-apache-config
+data:
+  obs.conf: |
+    #Listen 82
+    # May needed on old distributions or after an update from them.
+    Listen 30443
+
+    # Passenger defaults
+    PassengerSpawnMethod "smart"
+    PassengerMaxPoolSize 20
+    #RailsEnv "development"
+
+    # allow long request urls and being part of headers
+    LimitRequestLine 20000
+    LimitRequestFieldsize 20000
+
+    # Just the overview page
+    #<VirtualHost 172.16.117.111:80>
+    #        # just give an overview about this OBS instance via static web page
+    #        DocumentRoot  "/srv/www/obs/overview"
+    #
+    #        <Directory /srv/www/obs/overview>
+    #           Options Indexes
+    #           Require all granted
+    #        </Directory>
+    #</VirtualHost>
+
+
+    # Build Results
+    #<VirtualHost 172.16.117.111:82>
+    #        # The resulting repositories
+    #        DocumentRoot  "/srv/obs/repos"
+    #
+    #        <Directory /srv/obs/repos>
+    #           Options Indexes FollowSymLinks
+    #           Require all granted
+    #        </Directory>
+    #</VirtualHost>
+
+
+    # OBS WEBUI & API
+    <VirtualHost *:30443>
+            ServerName build-test.deepin.com
+            # ServerName build.deepin.com
+            # ServerName localhost
+
+            #  General setup for the virtual host
+            DocumentRoot  "/srv/www/obs/api/public"
+            PassengerFriendlyErrorPages on
+            ErrorLog /srv/www/obs/api/log/apache_error.log
+            TransferLog /srv/www/obs/api/log/apache_access.log
+
+            # Enable maintenance mode. All requests will be redirected
+            # to the maintenance page and return 503 as http status.
+            # Start your apache with -D MAINTENANCE to enable this.
+            # On (open)SUSE you can do this by setting
+            # APACHE_SERVER_FLAGS="MAINTENANCE" in /etc/sysconfig/apache
+            <IfDefine MAINTENANCE>
+              ErrorDocument 503 /503.html
+              RewriteEngine on
+              RewriteCond %{REQUEST_URI} !=/503.html
+              RewriteCond %{REQUEST_URI} !=/obs-down.png
+              RewriteRule ^ - [R=503,L]
+            </IfDefine>
+
+            PassengerMinInstances 2
+            PassengerPreStart https://localhost
+
+            #SSLEngine on
+
+            #  SSL protocols
+            #  Supporting TLS only is adequate nowadays
+            #SSLProtocol all -SSLv2 -SSLv3
+
+            #   SSL Cipher Suite:
+            #   List the ciphers that the client is permitted to negotiate.
+            #   We disable weak ciphers by default.
+            #   See the mod_ssl documentation or "openssl ciphers -v" for a
+            #   complete list.
+            #SSLCipherSuite ALL:!aNULL:!eNULL:!SSLv2:!LOW:!EXP:!MD5:@STRENGTH
+
+            #SSLCertificateFile    /srv/obs/certs/server.crt
+            #SSLCertificateKeyFile /srv/obs/certs/server.key
+
+            <Directory /srv/www/obs/api/public>
+              AllowOverride all
+              Options -MultiViews
+
+              # This requires mod_xforward loaded in apache
+              # Enable the usage via options.yml
+              # This will decrease the load due to long running requests a lot (unloading from rails stack)
+              XForward on
+
+              Require all granted
+            </Directory>
+
+            SetEnvIf User-Agent ".*MSIE [1-5].*" \
+              nokeepalive ssl-unclean-shutdown \
+              downgrade-1.0 force-response-1.0
+
+            CustomLog /var/log/apache2/ssl_request_log   ssl_combined
+
+            # Make sure the browser supports gzip encoding before we send it
+            RewriteCond %{HTTP:Accept-Encoding} \b(x-)?gzip\b
+            RewriteCond "%{DOCUMENT_ROOT}%{REQUEST_FILENAME}\.gz" -s
+            RewriteRule "^(.*)\.(css|eot|ico|js|svg|ttf)"         "$1\.$2\.gz" [QSA]
+
+            # Serve correct content types, and prevent mod_deflate double gzip.
+            RewriteRule "\.css\.gz$"  "-" [T=text/css,E=no-gzip:1]
+            RewriteRule "\.eot\.gz$"  "-" [T=application/vnd.ms-fontobject,E=no-gzip:1]
+            RewriteRule "\.ico\.gz$"  "-" [T=image/x-icon,E=no-gzip:1]
+            RewriteRule "\.js\.gz$"   "-" [T=text/javascript,E=no-gzip:1]
+            RewriteRule "\.svg\.gz$"  "-" [T=image/svg+xml,E=no-gzip:1]
+            RewriteRule "\.ttf\.gz$"  "-" [T=application/x-font-ttf,E=no-gzip:1]
+
+            <FilesMatch "\.(css|eot|ico|js|svg|ttf)\.gz$">
+              # Serve correct encoding type.
+              Header append Content-Encoding gzip
+
+              # Force proxies to cache gzipped &
+              # non-gzipped css/js files separately.
+              Header append Vary Accept-Encoding
+            </FilesMatch>
+
+            # from http://guides.rubyonrails.org/asset_pipeline.html
+            <LocationMatch "^/assets/.*$">
+              Header unset ETag
+              FileETag None
+              # RFC says only cache for 1 year
+              ExpiresActive On
+              ExpiresDefault "access plus 1 year"
+            </LocationMatch>
+
+            SetEnvIf User-Agent ".*MSIE [1-5].*" \
+              nokeepalive ssl-unclean-shutdown \
+              downgrade-1.0 force-response-1.0
+
+            ## Older firefox versions needs this, otherwise it wont cache anything over SSL.
+            Header append Cache-Control "public"
+
+            ProxyPass /v2 http://localhost:5352/registry
+            ProxyPassReverse /v2 http://localhost:5352/registry
+            ProxyPass /sigstore http://localhost:5352/sigstore
+            ProxyPassReverse /sigstore http://localhost:5352/sigstore
+            ProxyPass /extensions/v2 http://localhost:5352/registry
+            ProxyPassReverse /extensions/v2 http://localhost:5352/registry
+    </VirtualHost>
+
+---
+# Obs Database ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: api-db-config
+data:
+  database.yml: |
+    # MySQL (default setup).  Versions 4.1 and 5.0 are recommended.
+    #
+    # Get the fast C bindings:
+    #   gem install mysql
+    #   (on OS X: gem install mysql -- --include=/usr/local/lib)
+    # And be sure to use new-style password hashing:
+    #   http://dev.mysql.com/doc/refman/5.0/en/old-client.html
+
+    production:
+      adapter: mysql2
+      database: api_production
+      username: obs
+      password: ***
+      encoding: utf8mb4
+      collation: utf8mb4_unicode_ci
+      host: mysql
+      port: 3306
+      timeout: 15
+      pool: 30
+
+    development:
+      adapter: mysql2
+      database: api_development
+      username: obs
+      password: obs
+      encoding: utf8mb4
+      collation: utf8mb4_unicode_ci
+      host: mysql
+      port: 3306
+      timeout: 15
+      pool: 30
+
+    # Warning: The database defined as 'test' will be erased and
+    # re-generated from your development database when you run 'rails'.
+    # Do not set this db to the same as development or production.
+    test:
+      adapter: mysql2
+      database: api_test
+      username: obs
+      password: obs
+      encoding: utf8mb4
+      collation: utf8mb4_unicode_ci
+      host: 10.20.64.72
+      port: 3306
+      timeout: 15
+      pool: 30
+
+---
+# Obs Options ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: api-options-config
+data:
+  options.yml: |
+    #
+    # This file contains the default configuration of the Open Build Service API.
+    #
+
+    default: &default
+      #read_only_hosts: [ "build.opensuse.org", "software.opensuse.org" ]
+
+      # Make use of mod_xforward module in apache
+      #use_xforward: true
+
+      # Make use of X-Accel-Redirect for Nginx.
+      # http://kovyrin.net/2010/07/24/nginx-fu-x-accel-redirect-remote
+      #use_nginx_redirect: /internal_redirect
+
+      # Set to true to verify XML reponses comply to the schema
+      response_schema_validation: false
+
+      # backend source server
+      source_host: src
+      # NOTE: the source_port setting is ignored and hardcoded for "test" and "development" env
+      source_port: 5352
+      #source_protocol: https
+      #source_protocol_ssl_verification: false
+
+      # api access to this instance
+      frontend_host: localhost
+      frontend_port: 30443
+      frontend_protocol: https
+
+      extended_backend_log: false
+
+      # proxy_auth_mode can be :off or :on
+      proxy_auth_mode: :off
+
+      # ATTENTION: If proxy_auth_mode'is :on, the frontend takes the user
+      # name that is coming as headervalue X-username as a
+      # valid user does no further authentication. So take care...
+      proxy_auth_test_user: coolguy
+      proxy_auth_test_email: coolguy@example.com
+
+      ### Kerberos configuration
+
+      # can be true or false
+      kerberos_mode: false
+
+      #kerberos_keytab: "/etc/krb5.keytab"
+      #kerberos_service_principal: "HTTP/hostname.example.com@EXAMPLE.COM"
+      #kerberos_realm: "EXAMPLE.COM"
+
+
+      #schema_location
+
+      #version
+
+      # if set to false, the API will only fake writes to backend (useful in testing)
+      # global_write_through: true
+
+      # see http://colszowka.heroku.com/2011/02/22/setting-up-your-custom-hoptoad-notifier-endpoint-for-free-using-errbit-on-heroku
+      #errbit_api_key: api_key_of_your_app
+      #errbit_project_id:
+      #errbit_host: installation.of.errbit.com
+
+      ##################
+      # LDAP options
+      ##################
+
+      #### WARNING: LDAP mode is not official supported by OBS!
+      ldap_mode: :off
+      #### WARNING: LDAP mode is not official supported by OBS!
+
+      # LDAP Servers separated by ':'.
+      # OVERRIDE with your company's ldap servers. Servers are picked randomly for
+      # each connection to distribute load.
+      ldap_servers: ldap1.mycompany.com:ldap2.mycompany.com
+
+      # Max number of times to attempt to contact the LDAP servers
+      ldap_max_attempts: 15
+
+      # The attribute the user memberof is stored in
+      ldap_user_memberof_attr: memberof
+
+      # Perform the group_user search with the member attribute of group entry or memberof attribute of user entry
+      # It depends on your ldap define
+      # The attribute the group member is stored in
+      ldap_group_member_attr: member
+
+      # If you're using ldap_authenticate=:ldap then you should ensure that
+      # ldaps is used to transfer the credentials over SSL or use the StartTLS extension
+      ldap_ssl: :on
+
+      # Use StartTLS extension of LDAP
+      ldap_start_tls: :off
+
+      # LDAP port defaults to 636 for ldaps and 389 for ldap and ldap with StartTLS
+      #ldap_port:
+      # Authentication with Windows 2003 AD requires
+      ldap_referrals: :off
+
+      # OVERRIDE with your company's ldap search base for the users who will use OBS
+      ldap_search_base: OU=Organizational Unit,DC=Domain Component
+      # Sam Account Name is the login name for LDAP
+      ldap_search_attr: sAMAccountName
+      # The attribute the users name is stored in
+      ldap_name_attr: cn
+      # The attribute the users email is stored in
+      ldap_mail_attr: mail
+      # Credentials to use to search ldap for the username
+      ldap_search_user: ""
+      ldap_search_auth: ""
+
+      # By default any LDAP user can be used to authenticate to the OBS
+      # In some deployments this may be too broad and certain criteria should
+      # be met; eg group membership
+      #
+      # To allow only users in a specific group uncomment this line:
+      #ldap_user_filter: (memberof=CN=group,OU=Groups,DC=Domain Component)
+      #
+      # Note this is joined to the normal selection like so:
+      # (&(#{ldap_search_attr}=#{login})#{ldap_user_filter})
+      # giving an ldap search of:
+      #  (&(sAMAccountName=#{login})(memberof=CN=group,OU=Groups,DC=Domain Component))
+      #
+      # Also note that openLDAP must be configured to use the memberOf overlay
+
+      # ldap_authenticate says how the credentials are verified:
+      #   :ldap = attempt to bind to ldap as user using supplied credentials
+      #   :local = compare the credentials supplied with those in
+      #            LDAP using #{ldap_auth_attr} & #{ldap_auth_mech}
+      #       if :local is used then ldap_auth_mech can be
+      #       :md5
+      #       :cleartext
+      ldap_authenticate: :ldap
+      ldap_auth_mech: :md5
+      # This is a string
+      ldap_auth_attr: userPassword
+
+      # Whether to search group info from ldap, it does not take effect
+      # when LDAP_GROUP_SUPPOR is not set.
+      # Please also set below LDAP_GROUP_* configs correctly to ensure the operation works properly
+      ldap_group_support: :off
+      # OVERRIDE with your company's ldap search base for groups
+      ldap_group_search_base: ou=OBSGROUPS,dc=EXAMPLE,dc=COM
+      # The attribute the group name is stored in
+      ldap_group_title_attr: cn
+      # The value of the group objectclass attribute, leave it as "" if objectclass attr doesn't exist
+      ldap_group_objectclass_attr: groupOfNames
+
+      # Data to locate the database backup
+      # Will be used in the script/import_database.rb script
+      backup_server: foo.bar
+      backup_user: tux
+      backup_location: /home/tux
+      backup_filename: obs_production.sql.xz
+      backup_port: 22
+
+      # Rabbitmq based message bus
+      #
+      # Prefix of the message bus rooting key
+      # amqp_namespace: 'opensuse.obs'
+      #
+      # Connection options -> http://rubybunny.info/articles/connecting.html
+      # amqp_options:
+      #   host: rabbit.example.com
+      #   port: 5672
+      #   user: guest
+      #   pass: guest
+      #   vhost: vhost
+      #
+      # Exchange options -> http://rubybunny.info/articles/exchanges.html
+      # amqp_exchange_name: pubsub
+      # amqp_exchange_options:
+      #  type: :topic
+      #  auto_delete: false
+      #  arguments:
+      #    persistent: true
+      #    passive: true
+
+      # For sending application performance metrics to a influx time series database
+      # influxdb_database: rails
+      # influxdb_username: rails
+      # influxdb_password: 123456
+      # influxdb_hosts:
+      #  - domain.tld
+      # influxdb_port: 8086
+      # influxdb_ssl: true
+      # influxdb_retry: 10
+      # influxdb_time_precision: ms
+
+      # Disable the contribution graph on the user home page
+      # contribution_graph: :off
+
+      # Display sponsors above the footer on every page
+      # sponsors:
+      # - name: Sponsor ABC
+      #   description: We are the best at ABC
+      #   icon: sponsor_abc
+      #   url: https://www.example.com
+
+      # Lifetime for repositories published after accepting maintenance release requests.
+      # Default: 2 days (172800 seconds).
+      # maintenance_release_repositories_lifetime: 172800
+
+      # Lifetime for notifications.
+      # Default: 365 days (1 year).
+      notifications_lifetime: 365
+
+      # Prevent adding the user as a maintainer, in project creation, in this API endpoint:
+      # PUT /source/:project/_meta
+      # Former and default value is `false`: the user is added as a maintainer.
+      prevent_adding_maintainer_in_project_creation_with_api: false
+
+    production:
+      <<: *default
+      memcached_host: memcached
+
+    test:
+      <<: *default
+      source_host: backend
+      memcached_host: cache
+
+    development:
+      <<: *default
+      source_host: 10.20.64.72
+      #memcached_host: cache
+    # This is to prevent fdupes from hardlinking
+
+---
+# Obs Src Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: src-config
+data:
+  BSConfig.pm: |
+    #
+    # Copyright (c) 2006, 2007 Michael Schroeder, Novell Inc.
+    #
+    # This program is free software; you can redistribute it and/or modify
+    # it under the terms of the GNU General Public License version 2 as
+    # published by the Free Software Foundation.
+    #
+    # This program is distributed in the hope that it will be useful,
+    # but WITHOUT ANY WARRANTY; without even the implied warranty of
+    # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    # GNU General Public License for more details.
+    #
+    # You should have received a copy of the GNU General Public License
+    # along with this program (see the file COPYING); if not, write to the
+    # Free Software Foundation, Inc.,
+    # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+    #
+    ################################################################
+    #
+    # Open Build Service Configuration
+    #
+
+    package BSConfig;
+
+    use Net::Domain;
+    use Socket;
+
+    my $hostname = Net::Domain::hostfqdn() || 'localhost';
+    # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
+    my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
+
+    my $frontend = 127.0.0.1; # FQDN of the WebUI/API server if it's not $hostname
+
+    # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
+    our $ipaccess = {
+      '^::1$' => 'rw',    # only the localhost can write to the backend
+      '^127\..*' => 'rw', # only the localhost can write to the backend
+      "^$ip\$" => 'rw',   # Permit IP of FQDN
+      ".*" => 'rw',   # backend-main
+      '.*' => 'worker',   # build results can be delivered from any client in the network
+    };
+
+    # IP of the WebUI/API Server (only used for $ipaccess)
+    if ($frontend) {
+      my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
+      $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
+    }
+
+    # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
+    our $srcserver = "http://src:5352";
+    #our $reposerver = "http://$hostname:5252";
+    our $serviceserver = "http://src:5152";
+    #our $clouduploadserver = "http://$hostname:5452";
+    #
+
+    our @reposervers = ("
+      http://backend:5252,
+    ");
+
+    our $redisserver = "redis://127.0.0.1";
+    # you can use different ports for worker connections
+    our $workersrcserver = "http://src:5353";
+    our $workerreposerver = "http://backend:5252";
+
+    our $servicedir = "/usr/lib/obs/service/";
+    #our $servicetempdir = "/srv/obs/service";
+    #our $serviceroot = "/opt/obs/MyServiceSystem";
+
+    # Maximum number of concurrent jobs for source service
+    #our $service_maxchild = 20;
+
+    # optional notification service:
+    #our $hermesserver = "http://$hostname/hermes";
+    #our $hermesnamespace = "OBS";
+    #
+    # Notification Plugin, multiple plugins supported, separated by space
+    #our $notification_plugin = "notify_hermes notify_rabbitmq";
+    #
+
+    # Package defaults
+    our $bsdir = '/srv/obs';
+    our $bsuser = 'obsrun';
+    our $bsgroup = 'obsrun';
+    # user and group for bs_service (if the lxc service wrapper is used, set
+    # $bsserviceuser to root). If several obs services (e.g., bs_service and
+    # bs_srcserver) run on the same host, make sure that $bsservicegroup is set
+    # to $bsgroup.
+    our $bsserviceuser = 'obsservicerun';
+    our $bsservicegroup = $bsgroup;
+    #our $bsquotafile = '/srv/obs/quota.xml';
+
+    # Use asynchronus scheduler. This avoids hanging schedulers on remote projects,
+    # when the network is slow or broken. This will become the default in future
+    # our $sched_asyncmode = 1;
+
+    # Define how the scheduler does a cold start. The default (0) is to request the
+    # data for all packages, (1) means that only the non-remote packages are fetched,
+    # (2) means that all of the package data fetches get delayed.
+    # our $sched_startupmode = 0;
+
+    # Disable fdatasync calls, increases the speed, but may lead to data 
+    # corruption on system crash when the filesystem does not guarantees
+    # data write before rename.
+    # It is esp. required on XFS filesystem.
+    # It is safe to be disabled on ext4 and btrfs filesystems.
+    #our $disable_data_sync = 1;
+
+    # Package rc script / backend communication + log files
+    our $rundir = "$bsdir/run";
+    our $logdir = "$bsdir/log";
+
+    # optional for non-acl systems, should be set for access control
+    # 0: trees are shared between projects (built-in default)
+    # 1: trees are not shared (only usable for new installations)
+    # 2: new trees are not shared, in case of a missing tree the shared
+    #    location is also tried (package default)
+    our $nosharedtrees = 2;
+
+    # enable binary release tracking by default for release projects
+    our $packtrack = [];
+
+    # optional: limit visibility of projects for some architectures
+    #our $limit_projects = {
+    # "ppc" => [ "openSUSE:Factory", "FATE" ],
+    # "ppc64" => [ "openSUSE:Factory", "FATE" ],
+    #};
+
+    # optional: allow seperation of releasnumber syncing per architecture
+    # one counter pool for all ppc architectures, one for i586/x86_64,
+    # arm archs are seperated and one for the rest in this example
+    our $relsync_pool = {
+    "local" => "local",
+    "i586" => "i586",
+    "x86_64" => "i586",
+    "ppc" => "ppc",
+    "ppc64" => "ppc",
+    "ppc64le" => "ppc",
+    "mips" => "mips",
+    "mips64" => "mips",
+    "mipsel" => "mipsel",
+    "mips64el" => "mipsel",
+    "aarch64"  => "arm",
+    "aarch64_ilp32"  => "arm",
+    "armv4l"  => "arm",
+    "armv5l"  => "arm",
+    "armv6l"  => "arm",
+    "armv6hl" => "arm",
+    "armv7l"  => "arm",
+    "armv7hl" => "arm",
+    "armv5el" => "armv5el", # they do not exist
+    "armv6el" => "armv6el",
+    "armv7el" => "armv7el",
+    "armv8el" => "armv8el",
+    "sparcv9" => "sparcv9",
+    "sparc64" => "sparcv9",
+    };
+
+    #No extra stage server sync
+    #our $stageserver = 'rsync://127.0.0.1/put-repos-main';
+    #our $stageserver_sync = 'rsync://127.0.0.1/trigger-repos-sync';
+
+    #additional options for calling rsync in the publisher
+    #for example "--whole-file" if network faster than disk
+    #our $rsync_extra_options = "--whole-file";
+
+    #No package signing server
+    our $sign = "/usr/bin/sign";
+    #Extend sign call with project name as argument "--project $NAME"
+    #our $sign_project = 1;
+    #Global sign key 
+    our $keyfile = "/srv/obs/obs-default-gpg.asc";
+    our $gpg_standard_key = "/srv/obs/obs-default-gpg.asc";
+
+    # Use a special local arch for product building
+    # our $localarch = "x86_64";
+
+    # config options for the bs_worker
+    #
+    #our buildlog_maxsize = 500 * 1000000;
+    #our buildlog_maxidle =   8 * 3600;
+    #our xenstore_maxsize =  20 * 1000000;
+    #our gettimeout =         1 * 3600;
+    #
+    # run a script to check if the worker is good enough for the job
+    #our workerhostcheck = 'my_check_script';
+    # 
+    # Allow to build as root, exceptions per package
+    # the keys are actually anchored regexes
+    # our $norootexceptions = { "my_project/my_package" => 1, "openSUSE:Factory.*/installation-images" => 1 };
+
+    # Use old style source service handling
+    # our $old_style_services = 1;
+
+    ###
+    # Optional support to split the binary backend. This can be used on large servers
+    # to seperate projects for better scalability.
+    # There is still just one source server, but there can be multiple servers which
+    # run each repserver, schedulers, dispatcher, warden and publisher
+    #
+    # This repo service is the 'home' server for all home:* projects. This and the
+    # $reposerver setting must be different on the binary backend servers.
+    # our $partition = 'home';
+    #
+    # this defines how the projects are split. All home: projects are hosted
+    # on an own server in this example. Order is important.
+    our $partitioning = [
+      '.*'    => 'backend-main',
+    ];
+    #
+    our $partitionservers = {
+            'backend-main' => 'http://backend:5252',
+    };
+
+    # host specific configs
+    my $hostconfig = __FILE__;
+    $hostconfig =~ s/[^\/]*$/bsconfig.$hostname/;
+    if (-r $hostconfig) {
+      print STDERR "reading $hostconfig...\n";
+      require $hostconfig;
+    }
+
+    # For specific build constraints, for example to require a specific
+    # security level of the workers.
+    #
+    #our $dispatch_constraint = sub {
+    #  my ($job, $worker) = @_;
+    #
+    #  return 0 unless (grep {$_ eq "OBS_WORKER_SECURITY_LEVEL_1"} @{$worker->{'hostlabel'} || []});
+    #  return 1;
+    #}
+
+    # use createrepo_c instead of createrepo. This gets selected via update-alternatives usualy.
+    #our $createrepo = '/usr/bin/createrepo_c';
+    # use modifyrepo_c instead of modifyrepo
+    #our $modifyrepo = '/usr/bin/modifyrepo_c';
+
+    # enable service dispatcher
+    our $servicedispatch = 1;
+    # max of 4 parallel running services (default)
+    # our $servicedispatch_maxchild = 4;
+
+    # print all messages with a lower level than $debuglevel in addition to the normal log messages
+    #our $debuglevel = 1;
+
+    our $container_registries = {
+      'local' => {
+        server => $hostname,
+        pushserver => 'local:'
+      },
+    #   'staging-registry.example.com' => {
+    #     server => '',
+    #     user => '',
+    #     password => '',
+    #     repository_base => '',
+    #   },
+    #   'hub.docker.com' => {
+    #     server => '',
+    #     user => '',
+    #     password => '',
+    #     repository_base => '',
+    #   },
+    };
+
+    our $publish_containers = [
+    #   # key:   regex to match projid
+    #   # value: ArrayRef with identifiers for registries configured in $container_registries
+    #   'SUSE:.*'        => [ 'registry.example.com', 'hub.docker.com' ],
+    #   '.*:branches:.*' => [ 'staging-registry.example.com' ],
+      '.*'             => ['local'],
+    ];
+
+
+    # special options to use for starting containers in run-service-containerized
+    # our $docker_custom_opt = [];
+
+    ## Server where mirrored gems could be found - used in services like obs-service-bundle_gems
+    # our $gems_mirror = '';
+    #
+    ## Container which should be 'linked' when running "bundle_gems" service
+    # our $geminabox_container = '';
+    #
+
+    # public cloud uploader configuration
+    # our $cloudupload_pubkey = "/etc/obs/cloudupload/_pubkey"; # default setting
+
+    1;
+
+---
+# Obs Backend Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: backend-config
+data:
+  BSConfig.pm: |
+    #
+    # Copyright (c) 2006, 2007 Michael Schroeder, Novell Inc.
+    #
+    # This program is free software; you can redistribute it and/or modify
+    # it under the terms of the GNU General Public License version 2 as
+    # published by the Free Software Foundation.
+    #
+    # This program is distributed in the hope that it will be useful,
+    # but WITHOUT ANY WARRANTY; without even the implied warranty of
+    # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    # GNU General Public License for more details.
+    #
+    # You should have received a copy of the GNU General Public License
+    # along with this program (see the file COPYING); if not, write to the
+    # Free Software Foundation, Inc.,
+    # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+    #
+    ################################################################
+    #
+    # Open Build Service Configuration
+    #
+
+    package BSConfig;
+
+    use Net::Domain;
+    use Socket;
+
+    my $hostname = Net::Domain::hostfqdn() || 'localhost';
+    # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
+    my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
+
+    my $frontend = 172.25.3.1; # FQDN of the WebUI/API server if it's not $hostname
+
+    # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
+    our $ipaccess = {
+      '^::1$' => 'rw',    # only the localhost can write to the backend
+      '^127\..*' => 'rw', # only the localhost can write to the backend
+      "^$ip\$" => 'rw',   # Permit IP of FQDN
+      ".*" => 'rw',   # Permit IP of FQDN
+      '.*' => 'worker',   # build results can be delivered from any client in the network
+    };
+
+    # IP of the WebUI/API Server (only used for $ipaccess)
+    if ($frontend) {
+      my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
+      $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
+    }
+
+    # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
+    our $srcserver = "http://src:5352";
+    our $reposerver = "http://backend:5252";
+    our $serviceserver = "http://src:5152";
+    #our $clouduploadserver = "http://$hostname:5452"; 
+
+    # you can use different ports for worker connections
+    our $workersrcserver = "http://src:5352";
+    our $workerreposerver = "http://backend:5252";
+
+    #our $servicedir = "/usr/lib/obs/service/";
+    #our $servicetempdir = "/srv/obs/service";
+    #our $serviceroot = "/opt/obs/MyServiceSystem";
+
+    # Maximum number of concurrent jobs for source service
+    #our $service_maxchild = 20;
+
+    # optional notification service:
+    #our $hermesserver = "http://$hostname/hermes";
+    #our $hermesnamespace = "OBS";
+    #
+    # Notification Plugin, multiple plugins supported, separated by space
+    #our $notification_plugin = "notify_hermes notify_rabbitmq";
+    #
+
+    # Package defaults
+    our $bsdir = '/srv/obs';
+    our $bsuser = 'obsrun';
+    our $bsgroup = 'obsrun';
+    # user and group for bs_service (if the lxc service wrapper is used, set
+    # $bsserviceuser to root). If several obs services (e.g., bs_service and
+    # bs_srcserver) run on the same host, make sure that $bsservicegroup is set
+    # to $bsgroup.
+    our $bsserviceuser = 'obsservicerun';
+    our $bsservicegroup = $bsgroup;
+    #our $bsquotafile = '/srv/obs/quota.xml';
+
+    # Use asynchronus scheduler. This avoids hanging schedulers on remote projects,
+    # when the network is slow or broken. This will become the default in future
+    # our $sched_asyncmode = 1;
+
+    # Define how the scheduler does a cold start. The default (0) is to request the
+    # data for all packages, (1) means that only the non-remote packages are fetched,
+    # (2) means that all of the package data fetches get delayed.
+    # our $sched_startupmode = 0;
+
+    # Disable fdatasync calls, increases the speed, but may lead to data 
+    # corruption on system crash when the filesystem does not guarantees
+    # data write before rename.
+    # It is esp. required on XFS filesystem.
+    # It is safe to be disabled on ext4 and btrfs filesystems.
+    #our $disable_data_sync = 1;
+
+    # Package rc script / backend communication + log files
+    our $rundir = "$bsdir/run";
+    our $logdir = "$bsdir/log";
+
+    # optional for non-acl systems, should be set for access control
+    # 0: trees are shared between projects (built-in default)
+    # 1: trees are not shared (only usable for new installations)
+    # 2: new trees are not shared, in case of a missing tree the shared
+    #    location is also tried (package default)
+    our $nosharedtrees = 2;
+
+    # enable binary release tracking by default for release projects
+    our $packtrack = [];
+
+    # optional: limit visibility of projects for some architectures
+    #our $limit_projects = {
+    # "ppc" => [ "openSUSE:Factory", "FATE" ],
+    # "ppc64" => [ "openSUSE:Factory", "FATE" ],
+    #};
+
+    # optional: allow seperation of releasnumber syncing per architecture
+    # one counter pool for all ppc architectures, one for i586/x86_64,
+    # arm archs are seperated and one for the rest in this example
+    our $relsync_pool = {
+    "local" => "local",
+    "i586" => "i586",
+    "x86_64" => "i586",
+    "ppc" => "ppc",
+    "ppc64" => "ppc",
+    "ppc64le" => "ppc",
+    "mips" => "mips",
+    "mips64" => "mips",
+    "mipsel" => "mipsel",
+    "mips64el" => "mipsel",
+    "aarch64"  => "arm",
+    "aarch64_ilp32"  => "arm",
+    "armv4l"  => "arm",
+    "armv5l"  => "arm",
+    "armv6l"  => "arm",
+    "armv6hl" => "arm",
+    "armv7l"  => "arm",
+    "armv7hl" => "arm",
+    "armv5el" => "armv5el", # they do not exist
+    "armv6el" => "armv6el",
+    "armv7el" => "armv7el",
+    "armv8el" => "armv8el",
+    "sparcv9" => "sparcv9",
+    "sparc64" => "sparcv9",
+    };
+
+    our $redisserver = "redis://172.25.3.1:6379";
+
+    #No extra stage server sync
+    #our $stageserver = 'rsync://127.0.0.1/put-repos-main';
+    #our $stageserver = 'rsync://172.25.3.2/repo/';
+    #our $stageserver_sync = 'rsync://127.0.0.1/trigger-repos-sync';
+
+    #additional options for calling rsync in the publisher
+    #for example "--whole-file" if network faster than disk
+    #our $rsync_extra_options = "--whole-file";
+
+    #No package signing server
+    #our $sign = '/usr/bin/sign';
+    #Extend sign call with project name as argument "--project $NAME"
+    #our $sign_project = 1;
+    #Global sign key 
+    #our $keyfile = '/srv/obs/openSUSE-Build-Service.asc';
+    #our $gpg_standard_key = "/etc/obs-default-gpg.asc";
+
+    # Use a special local arch for product building
+    # our $localarch = "x86_64";
+
+    # config options for the bs_worker
+    #
+    #our buildlog_maxsize = 500 * 1000000;
+    #our buildlog_maxidle =   8 * 3600;
+    #our xenstore_maxsize =  20 * 1000000;
+    #our gettimeout =         1 * 3600;
+    #
+    # run a script to check if the worker is good enough for the job
+    #our workerhostcheck = 'my_check_script';
+    # 
+    # Allow to build as root, exceptions per package
+    # the keys are actually anchored regexes
+    # our $norootexceptions = { "my_project/my_package" => 1, "openSUSE:Factory.*/installation-images" => 1 };
+
+    # Use old style source service handling
+    # our $old_style_services = 1;
+
+    ###
+    # Optional support to split the binary backend. This can be used on large servers
+    # to seperate projects for better scalability.
+    # There is still just one source server, but there can be multiple servers which
+    # run each repserver, schedulers, dispatcher, warden and publisher
+    #
+    # This repo service is the 'home' server for all home:* projects. This and the
+    # $reposerver setting must be different on the binary backend servers.
+    our $partition = 'backend-main';
+    #
+    # this defines how the projects are split. All home: projects are hosted
+    # on an own server in this example. Order is important.
+    # our $partitioning = [ 'home:' => 'home',
+    #                       '.*'    => 'main',
+    #                     ];
+    #
+    # our $partitionservers = { 'home' => 'http://home-backend-server:5252',
+    #                           'main' => 'http://main-backend-server:5252',
+    #                         };
+
+    # host specific configs
+    my $hostconfig = __FILE__;
+    $hostconfig =~ s/[^\/]*$/bsconfig.$hostname/;
+    if (-r $hostconfig) {
+      print STDERR "reading $hostconfig...\n";
+      require $hostconfig;
+    }
+
+    # For specific build constraints, for example to require a specific
+    # security level of the workers.
+    #
+    #our $dispatch_constraint = sub {
+    #  my ($job, $worker) = @_;
+    #
+    #  return 0 unless (grep {$_ eq "OBS_WORKER_SECURITY_LEVEL_1"} @{$worker->{'hostlabel'} || []});
+    #  return 1;
+    #}
+
+    # use createrepo_c instead of createrepo. This gets selected via update-alternatives usualy.
+    #our $createrepo = '/usr/bin/createrepo_c';
+    # use modifyrepo_c instead of modifyrepo
+    #our $modifyrepo = '/usr/bin/modifyrepo_c';
+
+    # enable service dispatcher
+    our $servicedispatch = 1;
+    # max of 4 parallel running services (default)
+    # our $servicedispatch_maxchild = 4;
+
+    # print all messages with a lower level than $debuglevel in addition to the normal log messages
+    #our $debuglevel = 1;
+
+    our $container_registries = {
+      'local' => {
+        server => $hostname,
+        pushserver => 'local:'
+      },
+    #   'staging-registry.example.com' => {
+    #     server => '',
+    #     user => '',
+    #     password => '',
+    #     repository_base => '',
+    #   },
+    #   'hub.docker.com' => {
+    #     server => '',
+    #     user => '',
+    #     password => '',
+    #     repository_base => '',
+    #   },
+    };
+
+    our $publish_containers = [
+    #   # key:   regex to match projid
+    #   # value: ArrayRef with identifiers for registries configured in $container_registries
+    #   'SUSE:.*'        => [ 'registry.example.com', 'hub.docker.com' ],
+    #   '.*:branches:.*' => [ 'staging-registry.example.com' ],
+      '.*'             => ['local'],
+    ];
+
+
+    # special options to use for starting containers in run-service-containerized
+    # our $docker_custom_opt = [];
+
+    ## Server where mirrored gems could be found - used in services like obs-service-bundle_gems
+    # our $gems_mirror = '';
+    #
+    ## Container which should be 'linked' when running "bundle_gems" service
+    # our $geminabox_container = '';
+    #
+
+    # public cloud uploader configuration
+    # our $cloudupload_pubkey = "/etc/obs/cloudupload/_pubkey"; # default setting
+
+    1;
+
+---
+# Obs Backend Server Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: backend-server-config
+data:
+  obs-server: |
+    #
+    # NOTE: all these options can be also declared in /etc/buildhost.config on each worker differently.
+    #
+
+    ## Path:        Applications/OBS
+    ## Description: The OBS backend code directory
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # An empty dir will lead to the fall back directory, typically /usr/lib/obs/server/
+    #
+    OBS_BACKENDCODE_DIR=""
+
+    ## Path:        Applications/OBS
+    ## Description: The base for OBS communication directory
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # An empty dir will lead to the fall back directory, typically /srv/obs/run
+    #
+    OBS_RUN_DIR=""
+
+    ## Path:        Applications/OBS
+    ## Description: The base for OBS logging directory
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # An empty dir will lead to the fall back directory, typically /srv/obs/log
+    #
+    OBS_LOG_DIR=""
+
+    ## Path:        Applications/OBS
+    ## Description: The base directory for OBS
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # An empty dir will lead to the fall back directory, typically /srv/obs
+    #
+    OBS_BASE_DIR=""
+
+    ## Path:        Applications/OBS
+    ## Description: Automatically setup api and webui for OBS server, be warned, this will replace config files !
+    ## Type:        ("yes" | "no")
+    ## Default:     "no"
+    ## Config:      OBS
+    #
+    # This is usally only enabled on the OBS Appliance
+    #
+    OBS_API_AUTOSETUP="yes"
+    #
+    # NOTE: all these options can be also declared in /etc/buildhost.config on each worker differently.
+    #
+
+    ## Path:        Applications/OBS
+    ## Description: define source server host to be used
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # An empty setting will point to localhost:5352 by default
+    #
+    OBS_SRC_SERVER=""
+
+    ## Path:        Applications/OBS
+    ## Description: define repository server host to be used
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # An empty setting will point to localhost:5252 by default
+    #
+    OBS_REPO_SERVERS=""
+
+    ## Path:        Applications/OBS
+    ## Description: define number of build instances
+    ## Type:        integer
+    ## Default:     0
+    ## Config:      OBS
+    #
+    # 0 instances will automatically use the number of CPU's
+    #
+    OBS_WORKER_INSTANCES="0"
+
+    ## Path:        Applications/OBS
+    ## Description: define names of build instances for z/VM
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # The names of the workers as defined in z/VM. These must have two minidisks
+    # assigned, and have a secondary console configured to the local machine: 
+    # 0150 is the root device
+    # 0250 is the swap device
+    #
+    #OBS_WORKER_INSTANCE_NAMES="LINUX075 LINUX076 LINUX077"
+    OBS_WORKER_INSTANCE_NAMES=""
+
+    ## Path:        Applications/OBS
+    ## Description: The base directory, where sub directories for each worker will get created
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_DIRECTORY=""
+
+    ## Path:        Applications/OBS
+    ## Description: The base for port numbers used by worker instances
+    ## Type:        integer
+    ## Default:     "0"
+    ## Config:      OBS
+    #
+    # 0 means let the operating system assign a port number
+    #
+    OBS_WORKER_PORTBASE="0"
+
+    ## Path:        Applications/OBS
+    ## Description: Number of parallel compile jobs per worker
+    ## Type:        integer
+    ## Default:     "1"
+    ## Config:      OBS
+    #
+    # this maps usually to "make -j1" during build
+    #
+    OBS_WORKER_JOBS="1"
+
+    ## Path:        Applications/OBS
+    ## Description: Run in test mode (build results will be ignore, no job blocking)
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    OBS_WORKER_TEST_MODE=""
+
+    ## Path:        Applications/OBS
+    ## Description: define one or more labels for the build host.
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # A label can be used to build specific packages only on dedicated hosts.
+    # For example for benchmarking.
+    #
+    OBS_WORKER_HOSTLABELS=""
+
+    ## Path:        Applications/OBS
+    ## Description: can be used to define a security level of the worker
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # This will extend the hostlabels and can be used to limit the workers
+    # to the hosts which have all security fixes deployed.
+    #
+    OBS_WORKER_SECURITY_LEVEL=""
+
+    ## Path:        Applications/OBS
+    ## Description: Register in SLP server
+    ## Type:        ("yes" | "no")
+    ## Default:     "yes"
+    ## Config:      OBS
+    #
+    #
+    OBS_USE_SLP="yes"
+
+    ## Path:        Applications/OBS
+    ## Description: Use a common cache directory for downloaded packages
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # Enable caching requires a given directory here. Be warned, content will be
+    # removed there !
+    # 
+    OBS_CACHE_DIR=""
+
+    ## Path:        Applications/OBS
+    ## Description: Defines the package cache size
+    ## Type:        size in MB
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # Set the size to 50% of the maximum usable size of this partition
+    #
+    OBS_CACHE_SIZE=""
+
+    ## Path:        Applications/OBS
+    ## Description: Defines the nice level of running workers
+    ## Type:        integer
+    ## Default:     18
+    ## Config:      OBS
+    # 
+    # Nicenesses range from -20 (most favorable  scheduling) to 19 (least
+    # favorable).
+    # Default to 18 as some testsuites depend on being able to switch to
+    # one priority below (19) _and_ having changed the numeric level
+    # (so going from 19->19 makes them fail).
+    #
+    OBS_WORKER_NICE_LEVEL=18
+
+    ## Path:        Applications/OBS
+    ## Description: Set used VM type by worker
+    ## Type:        ("auto" | "xen" | "kvm" | "lxc" | "zvm" | "emulator:$arch" | "emulator:$arch:$script" | "qemu:$arch" | "none" | "openstack")
+    ## Default:     "auto"
+    ## Config:      OBS
+    #
+    #
+    OBS_VM_TYPE="auto"
+
+    ## Path:        Applications/OBS
+    ## Description: Set kernel used by worker (kvm)
+    ## Type:        ("none" | "/boot/vmlinuz" | "/foo/bar/vmlinuz)
+    ## Default:     "none"
+    ## Config:      OBS
+    #
+    # For z/VM this is normally /boot/image
+    #
+    OBS_VM_KERNEL="none"
+
+    ## Path:        Applications/OBS
+    ## Description: Set initrd used by worker (kvm)
+    ## Type:        ("none" | "/boot/initrd" | "/foo/bar/initrd-foo)
+    ## Default:     "none"
+    ## Config:      OBS
+    #
+    # for KVM, you have to create with (example for openSUSE 11.2):
+    #
+    # export rootfstype="ext4"
+    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_pci virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
+    #
+    # a working initrd file which includes virtio and binfmt_misc for OBS in order to work fine
+    #
+    # for z/VM, the build script will create a initrd at the given location if
+    # it does not yet exist.
+    # 
+    OBS_VM_INITRD="none"
+
+    ## Path:        Applications/OBS
+    ## Description: Autosetup for XEN/KVM/TMPFS disk (root) - Filesize in MB
+    ## Type:        integer
+    ## Default:     "4096"
+    ## Config:      OBS
+    #
+    #
+    OBS_VM_DISK_AUTOSETUP_ROOT_FILESIZE="4096"
+
+    ## Path:        Applications/OBS
+    ## Description: Autosetup for XEN/KVM disk (swap) - Filesize in MB
+    ## Type:        integer
+    ## Default:     "1024"
+    ## Config:      OBS
+    #
+    #
+    OBS_VM_DISK_AUTOSETUP_SWAP_FILESIZE="1024"
+
+    ## Path:        Applications/OBS
+    ## Description: Default filesystem to use for autosetup.
+    ## Type:        ("ext2" | "ext3" | "ext4" | "reiserfs" | "btrfs" | "xfs")
+    ## Default:     "ext3"
+    ## Config:      OBS
+    #
+    #
+    # Buildflag vmfstype may overwrite this for a specific job.
+    OBS_VM_DISK_AUTOSETUP_FILESYSTEM="ext3"
+
+    ## Path:        Applications/OBS
+    ## Description: Filesystem mount options to use for autosetup
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_VM_DISK_AUTOSETUP_MOUNT_OPTIONS=""
+
+    ## Path:        Applications/OBS
+    ## Description: Enable build in memory
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # WARNING: this requires much memory!
+    #
+    OBS_VM_USE_TMPFS=""
+
+    ## Path:        Applications/OBS
+    ## Description: Specify custom options for VM handler
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # Can be used to workaround problems with VM handler and should not be needed usually
+    #
+    OBS_VM_CUSTOM_OPTION=""
+
+    ## Path:        Applications/OBS
+    ## Description: Memory allocated for each VM (512) if not set
+    ## Type:        integer
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_INSTANCE_MEMORY=""
+
+    ## Path:        Applications/OBS
+    ## Description: Enable storage auto configuration
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # WARNING: this may destroy data on your hard disk !
+    # This is usually only used on mass deployed worker instances
+    #
+    OBS_STORAGE_AUTOSETUP=""
+
+    ## Path:        Applications/OBS
+    ## Description: Setup LVM via obsstoragesetup
+    ## Type:        ("take_all" | "use_obs_vg" | "none")
+    ## Default:     "use_obs_vg"
+    ## Config:      OBS
+    #
+    # take_all: WARNING: all LVM partitions will be used and all data erased !
+    # use_obs_vg:  A lvm volume group named "OBS" will be re-setup for the workers.
+    #
+    OBS_SETUP_WORKER_PARTITIONS="use_obs_vg"
+
+    ## Path:        Applications/OBS
+    ## Description: Size in MB when creating LVM partition for cache partition
+    ## Type:        integer
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_CACHE_SIZE=""
+
+    ## Path:        Applications/OBS
+    ## Description: Size in MB when creating LVM partition for each worker root partition
+    ## Type:        integer
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_ROOT_SIZE=""
+
+    ## Path:        Applications/OBS
+    ## Description: Size in MB when creating LVM partition for each worker swap partition
+    ## Type:        integer
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_SWAP_SIZE=""
+
+    ## Path:        Applications/OBS
+    ## Description: URL to a proxy service for caching binaries used by worker
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_BINARIES_PROXY=""
+
+    ## Path:        Applications/OBS
+    ## Description: URL to a ssh pub key to allow root user login
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # This is usually used on mass (PXE) deployed workers)
+    #
+    OBS_ROOT_SSHD_KEY_URL=""
+
+    ## Path:        Applications/OBS
+    ## Description: URL to a script to be downloaded and executed
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # This is a hook for doing special things in your setup at boot time
+    #
+    OBS_WORKER_SCRIPT_URL=""
+
+    ## Path:        Applications/OBS
+    ## Description: If chroot/lxc is used for build, empty it after build is finished
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_CLEANUP_CHROOT=""
+
+    ##Path:         Application/OBS
+    ## Description: wipes the build environment of the worker after the build
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_WIPE_AFTER_BUILD=""
+
+    ##Path:         Application/OBS
+    ## Description: name or id of openstack instance that controls the worker (building) instances
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_CONTROL_INSTANCE=""
+
+    ##Path:         Application/OBS
+    ## Description: name or id flavor to create openstack worker (building) instance
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_OS_FLAVOR=""
+
+    ##Path:         Application/OBS
+    ## Description: openstack environment variables. Only used when OBS_VM_TYPE=openstack
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OS_AUTH_URL=""
+
+    OS_PROJECT_ID=""
+    OS_PROJECT_NAME=""
+    OS_USER_DOMAIN_NAME=""
+    OS_USERNAME=""
+    OS_PASSWORD=""
+    OS_REGION_NAME=""
+
+    OBS_WORKER_PREFIX=""
+
+    OBS_OPENSTACK_DISK_SIZE=""
+    OBS_OPENSTACK_SWAP_SIZE=""
+    OBS_OPENSTACK_MEMORY_SIZE=""
+
+    ## Path:        Applications/OBS
+    ## Description: define a malloc wrapper for scheduler
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # Define a wrapper script for preloading libs for scheduler startup
+    # "jemalloc.sh" is a possibility here after installing jemalloc package.
+    #
+    OBS_SCHEDULER_WRAPPER=""
+
+    ## Path:        Applications/OBS
+    ## Description: Enable copyin functionality during VM setup
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # This enables mkfs copyin functionality support for some filesystems
+    #
+    OBS_WORKER_USE_MKFS_COPYIN=""
+
+    ## Path:        Applications/OBS
+    ## Description: Allow VMs to access the internet.
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # yes: WARNING: this may not be safe and may prevent build reproductibility.
+    #
+    OBS_VM_ENABLE_NET=""
+
+---
+# Obs Backend Xml Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: backend-xml-config
+data:
+  configuration.xml: |
+    <configuration>
+      <title>OBS</title>
+      <tos_url></tos_url>
+      <description>Deepin OBS Instance</description>
+      <name>deepin-obs</name>
+      <anonymous>on</anonymous>
+      <registration>deny</registration>
+      <default_access_disabled>off</default_access_disabled>
+      <allow_user_to_create_home_project>on</allow_user_to_create_home_project>
+      <disallow_group_creation>off</disallow_group_creation>
+      <change_password>on</change_password>
+      <hide_private_options>off</hide_private_options>
+      <gravatar>on</gravatar>
+      <enforce_project_keys>off</enforce_project_keys>
+      <download_on_demand>on</download_on_demand>
+      <download_url>https://ci.deepin.org/repo/obs</download_url>
+      <obs_url>https://build-test.deepin.org</obs_url>
+      <admin_email>hudeng@deepin.org</admin_email>
+      <cleanup_empty_projects>on</cleanup_empty_projects>
+      <disable_publish_for_branches>on</disable_publish_for_branches>
+      <schedulers>
+        <arch>aarch64</arch>
+        <arch>x86_64</arch>
+      </schedulers>
+      <unlisted_projects_filter>^home:.+</unlisted_projects_filter>
+      <unlisted_projects_filter_description>home projects</unlisted_projects_filter_description>
+    </configuration>
+
+---
+# Obs Worker Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: worker-config
+data:
+  obs-worker: |
+    # Nice level
+    # Nicenesses range from -20 (most favorable  scheduling) to 19 (least favorable).
+    OBS_WORKER_NICE_LEVEL=0
+
+    ## Path:        Applications/OBS
+    ## Description: define source server host to be used
+    ## Type:        string
+    ## Config:      OBS
+    #
+    #
+
+    OBS_SRC_SERVER="src:5352"
+
+    ## Path:        Applications/OBS
+    ## Description: define repository server host to be used
+    ## Type:        string
+    ## Config:      OBS
+    #
+    #
+
+    OBS_REPO_SERVERS="backend:5252"
+
+    ## Path:        Applications/OBS
+    ## Description: define number of build instances
+    ## Type:        integer
+    ## Default:     0
+    ## Config:      OBS
+    #
+    # 0 instances will automatically use the number of CPU's
+
+    OBS_WORKER_INSTANCES="8"
+
+    ## Path:        Applications/OBS
+    ## Description: The base directory, where sub directories for each worker will get created
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+
+    OBS_WORKER_DIRECTORY="/srv/obs/worker"
+
+    ## Path:        Applications/OBS
+    ## Description: The base for port numbers used by worker instances
+    ## Type:        integer
+    ## Default:     "0"
+    ## Config:      OBS
+    #
+    # 0 means let the operating system assign a port number
+
+    OBS_WORKER_PORTBASE="0"
+
+    ## Path:        Applications/OBS
+    ## Description: Number of parallel compile jobs per worker
+    ## Type:        integer
+    ## Default:     "1"
+    ## Config:      OBS
+    #
+    # this maps usually to "make -j1" during build
+    #
+    OBS_WORKER_JOBS="16"
+
+    ## Path:        Applications/OBS
+    ## Description: Run in test mode (build results will be ignore, no job blocking)
+    ## Type:        ("yes" | "")
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    OBS_WORKER_TEST_MODE=""
+
+    ## Path:        Applications/OBS
+    ## Description: The base for OBS communucation directory
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # This is /var/lib/obsworker by default
+    #
+    OBS_RUN_DIR="/srv/obs/obsworker_run"
+
+    ## Path:        Applications/OBS
+    ## Description: The base for OBS logging directory
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # This is /srv/obs/log by default
+    #
+    OBS_LOG_DIR=""
+
+    ## Path:        Applications/OBS
+    ## Description: Register in SLP server
+    ## Type:        ("yes" | "no")
+    ## Default:     "yes"
+    ## Config:      OBS
+    #
+    #
+    OBS_USE_SLP="no"
+
+    ## Path:        Applications/OBS
+    ## Description: Use a common cache directory for downloaded packages
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # Enable caching requires a given directory here. Be warned, content will be
+    # removed there !
+    #
+    OBS_CACHE_DIR="/srv/obs/obscache"
+
+    ## Path:        Applications/OBS
+    ## Description: Defines the package cache size
+    ## Type:        size in MB
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    # Set the size to 50% of the maximum usable size of this partition
+    #
+    OBS_CACHE_SIZE="81920"
+
+    ## Path:		Applications/OBS
+    ## Description:	Defines the VM type of worker
+    ## Type:		string
+    ## Default:		"none"
+    ## Config:		OBS
+    #
+    # It defaults to none, which will use chroot to create the builddirs
+    # Can use kvm and xen as well, options are kvm and xen respectively
+    #
+    OBS_VM_TYPE="none"
+    #OBS_INSTANCE_MEMORY="10240"
+    #OBS_VM_TYPE="auto"
+    #OBS_VM_DISK_AUTOSETUP_FILESYSTEM="ext4"
+    #OBS_VM_DISK_AUTOSETUP_ROOT_FILESIZE="32768"
+
+    ## Path:        Applications/OBS
+    ## Description: Make local worker use different arch instead of local native
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #OBS_ARCH_TYPE=""
+    #OBS_VM_KERNEL="/srv/obs/worker/vmlinuz-5.3.18-57-default"
+    #OBS_VM_INITRD="/srv/obs/worker/initrd-5.3.18-57-default"
+
+    #OBS_WORKER_HOSTLABELS="deepinci-amd1"
+    #OBS_VM_USE_TMPFS="yes"
+    #OBS_WORKER_TEST_MODE="yes"
+
+---
+# Obs Mysql Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: db-config
+data:
+  obs-worker: |
+
+---
+# Obs Mysql Config ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    namespace: obs
+    name: db-init-config
+data:
+  db-init.sql: |
+    create database api_production;
+    create user 'obs'@'%' identified by '***';
+    create user 'obs'@'localhost' identified by '***';
+    GRANT all privileges ON api_production.* TO 'obs'@'%', 'obs'@'localhost';
+    FLUSH PRIVILEGES;
+
+---
+# Obs Api Memcached Deployment
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: memcached
+  name: memcached
+  namespace: obs
+spec:
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      containers:
+        - name: memcached
+          image: memcached
+          imagePullPolicy: IfNotPresent
+
+---
+# Obs Api Memcached Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: obs
+  name: memcached
+spec:
+  selector:
+    app: memcached
+  ports:
+  - protocol: TCP
+    port: 11211
+    targetPort: 11211
+  type: ClusterIP
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: obs
+  labels:
+    app: db-config-data
+  name: db-config-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50M
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: obs
+  labels:
+    app: db-data
+  name: db-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+# Obs Api Mysql Deployment
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: mysql
+  name: mysql
+  namespace: obs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mariadb:10.6.14
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "obs"
+        - name: TIME_ZONE
+          value: Asia/Shanghai
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/mysql
+        - name: db-config-data
+          mountPath: /etc/mysql/conf.d
+        - name: db-init-config
+          mountPath: /docker-entrypoint-initdb.d/db-init.sql
+          subPath: db-init.sql
+      volumes:
+      - name: db-config-data
+        persistentVolumeClaim:
+          claimName: db-config-data
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: db-data
+      - name: db-init-config
+        configMap:
+          name: db-init-config
+          items:
+          - key: db-init.sql
+            path: db-init.sql
+
+---
+# Obs Api Mysql Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: obs
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+  type: ClusterIP
+
+---
+# Obs Api Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: obs
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+      - name: api
+        image: hub.deepin.com/k3s/obs/api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 30443
+        volumeMounts:
+        - name: api-apache-config
+          mountPath: /etc/apache2/vhosts.d/obs.conf
+          subPath: obs.conf
+        - name: api-db-config
+          mountPath: /srv/www/obs/api/config/database.yml
+          subPath: database.yml
+        - name: api-options-config
+          mountPath: /srv/www/obs/api/config/options.yml
+          subPath: options.yml
+      volumes:
+      - name: api-apache-config
+        configMap:
+          name: api-apache-config
+          items:
+          - key: obs.conf
+            path: obs.conf
+      - name: api-db-config
+        configMap:
+          name: api-db-config
+          items:
+          - key: database.yml
+            path: database.yml
+      - name: api-options-config
+        configMap:
+          name: api-options-config
+          items:
+          - key: options.yml
+            path: options.yml
+      imagePullSecrets:
+      - name: deepinhub
+
+---
+# Obs Api Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: obs
+  name: api
+spec:
+  selector:
+    app: api
+  ports:
+  - protocol: TCP
+    port: 30443
+    targetPort: 30443
+    nodePort: 30443
+  type: NodePort
+
+---
+# Obs Src Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: obs
+  name: src
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: src
+  template:
+    metadata:
+      labels:
+        app: src
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+      - name: src
+        image: hub.deepin.com/k3s/obs/src:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5352
+        - containerPort: 5152
+        volumeMounts:
+        - name: src-config
+          mountPath: /usr/lib/obs/server/BSConfig.pm
+          subPath: BSConfig.pm
+        - name: backend-server-config
+          mountPath: /etc/sysconfig/obs-server
+          subPath: obs-server
+        - name: backend-xml-config
+          mountPath: /srv/obs/configuration.xml
+          subPath: configuration.xml
+      volumes:
+      - name: src-config
+        configMap:
+          name: src-config
+          items:
+          - key: BSConfig.pm
+            path: BSConfig.pm
+      - name: backend-server-config
+        configMap:
+          name: backend-server-config
+          items:
+          - key: obs-server
+            path: obs-server
+      - name: backend-xml-config
+        configMap:
+          name: backend-xml-config
+          items:
+          - key: configuration.xml
+            path: configuration.xml
+      imagePullSecrets:
+      - name: deepinhub
+
+---
+# Obs Src Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: obs
+  name: src
+spec:
+  selector:
+    app: src
+  ports:
+  - name: srcport
+    protocol: TCP
+    port: 5352
+    targetPort: 5352
+  - name: serviceport
+    protocol: TCP
+    port: 5152
+    targetPort: 5152
+  type: ClusterIP
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: obs
+  labels:
+    app: backend-data
+  name: backend-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
+
+---
+# Obs Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: obs
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+      - name: backend
+        image: hub.deepin.com/k3s/obs/backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5252
+        volumeMounts:
+        - name: backend-config
+          mountPath: /usr/lib/obs/server/BSConfig.pm
+          subPath: BSConfig.pm
+        - name: backend-server-config
+          mountPath: /etc/sysconfig/obs-server
+          subPath: obs-server
+        - name: backend-data
+          mountPath: /srv/obs
+        - name: backend-xml-config
+          mountPath: /srv/obs/configuration.xml
+          subPath: configuration.xml
+      volumes:
+      - name: backend-config
+        configMap:
+          name: backend-config
+          items:
+          - key: BSConfig.pm
+            path: BSConfig.pm
+      - name: backend-server-config
+        configMap:
+          name: backend-server-config
+          items:
+          - key: obs-server
+            path: obs-server
+      - name: backend-data
+        persistentVolumeClaim:
+          claimName: backend-data
+      - name: backend-xml-config
+        configMap:
+          name: backend-xml-config
+          items:
+          - key: configuration.xml
+            path: configuration.xml
+      hostname: backend-main
+      imagePullSecrets:
+      - name: deepinhub
+
+---
+# Obs Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: obs
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 5252
+    targetPort: 5252
+  type: ClusterIP
+
+---
+# Obs Scheduler Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: obs
+  name: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+      - name: scheduler
+        image: hub.deepin.com/k3s/obs/scheduler:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: backend-config
+          mountPath: /usr/lib/obs/server/BSConfig.pm
+          subPath: BSConfig.pm
+        - name: backend-server-config
+          mountPath: /etc/sysconfig/obs-server
+          subPath: obs-server
+        - name: backend-data
+          mountPath: /srv/obs
+        - name: backend-xml-config
+          mountPath: /srv/obs/configuration.xml
+          subPath: configuration.xml
+      volumes:
+      - name: backend-config
+        configMap:
+          name: backend-config
+          items:
+          - key: BSConfig.pm
+            path: BSConfig.pm
+      - name: backend-server-config
+        configMap:
+          name: backend-server-config
+          items:
+          - key: obs-server
+            path: obs-server
+      - name: backend-data
+        persistentVolumeClaim:
+          claimName: backend-data
+      - name: backend-xml-config
+        configMap:
+          name: backend-xml-config
+          items:
+          - key: configuration.xml
+            path: configuration.xml
+      imagePullSecrets:
+      - name: deepinhub
+
+---
+# Obs Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: obs
+  name: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+      - name: worker
+        image: hub.deepin.com/k3s/obs/worker:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 32515
+        volumeMounts:
+        - name: backend-server-config
+          mountPath: /etc/sysconfig/obs-server
+          subPath: obs-server
+        - name: worker-config
+          mountPath: /etc/sysconfig/obs-worker
+          subPath: obs-worker
+      volumes:
+      - name: backend-server-config
+        configMap:
+          name: backend-server-config
+          items:
+          - key: obs-server
+            path: obs-server
+      - name: worker-config
+        configMap:
+          name: worker-config
+          items:
+          - key: obs-worker
+            path: obs-worker
+      hostname: worker-amd1
+      imagePullSecrets:
+      - name: deepinhub
+
+---
+# Obs Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: obs
+  name: worker
+spec:
+  selector:
+    app: worker
+  ports:
+  - protocol: TCP
+    port: 32515
+    targetPort: 32515
+  type: ClusterIP
