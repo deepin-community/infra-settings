@@ -1,0 +1,8 @@
+version: "2.1"
+services:
+  srcserver:
+    image: hub.deepin.com/k3s/obs/worker
+    volumes:
+      - ./obsworkerlog:/srv/obs/log/
+    ports:
+      - "32515:32515"
