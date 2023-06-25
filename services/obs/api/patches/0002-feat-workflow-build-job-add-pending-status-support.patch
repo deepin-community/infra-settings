@@ -1,0 +1,80 @@
+From 4a1cbb35e7df5bba2ba955d66783ecb418ac4afe Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Fri, 16 Jun 2023 16:13:58 +0800
+Subject: [PATCH] feat: workflow build job add pending status support
+
+---
+ src/api/app/models/token/workflow.rb          | 22 +++++++++++++++++++
+ src/api/app/models/workflow/step.rb           |  6 +++++
+ .../app/services/github_status_reporter.rb    |  2 +-
+ 3 files changed, 29 insertions(+), 1 deletion(-)
+
+diff --git a/src/api/app/models/token/workflow.rb b/src/api/app/models/token/workflow.rb
+index ab9e707ea0..8d44124320 100644
+--- a/src/api/app/models/token/workflow.rb
++++ b/src/api/app/models/token/workflow.rb
+@@ -49,6 +49,28 @@ class Token::Workflow < Token
+       workflow.call
+     end
+     SCMStatusReporter.new(@scm_webhook.payload, @scm_webhook.payload, scm_token, workflow_run, 'success', initial_report: true).call
++    # Report build job pending when evnt is pr or mr
++    if workflow_run.hook_event.in?(['pull_request', 'Merge Request Hook'])
++      @workflows.each do |workflow|
++        workflow.steps.each do |step|
++          if step.repositories
++            @payload = @scm_webhook.payload.deep_symbolize_keys
++            step.repositories.each do |repository|
++              repository.fetch(:architectures, []).each do |architecture|
++                name = repository.fetch(:name, '')
++                arch = architecture
++                @payload["repository"] = name
++                @payload["arch"] = arch
++                @payload["project"] = step.target_project_name
++                @payload["package"] = ""
++                SCMStatusReporter.new(@payload, @payload, scm_token, workflow_run, 'pending', initial_report: false).call
++              end
++            end
++          end
++        end
++      end
++    end
++
+     # Always returning validation errors to report them back to the SCM in order to help users debug their workflows
+     validation_errors
+   rescue Octokit::Unauthorized, Gitlab::Error::Unauthorized
+diff --git a/src/api/app/models/workflow/step.rb b/src/api/app/models/workflow/step.rb
+index cb74c60c8f..cc153d0fae 100644
+--- a/src/api/app/models/workflow/step.rb
++++ b/src/api/app/models/workflow/step.rb
+@@ -69,9 +69,15 @@ class Workflow::Step
+       end
+     when scm_webhook.tag_push_event?
+       "#{package_name}-#{scm_webhook.payload[:tag_name]}"
++    else
++      package_name
+     end
+   end
+ 
++  def repositories
++    return step_instructions[:repositories]
++  end
++
+   protected
+ 
+   def validate_step_instructions
+diff --git a/src/api/app/services/github_status_reporter.rb b/src/api/app/services/github_status_reporter.rb
+index a94e2bf8ca..afdd6bba26 100644
+--- a/src/api/app/services/github_status_reporter.rb
++++ b/src/api/app/services/github_status_reporter.rb
+@@ -48,7 +48,7 @@ class GithubStatusReporter < SCMExceptionHandler
+       { context: 'OBS SCM/CI Workflow Integration started',
+         target_url: Rails.application.routes.url_helpers.token_workflow_run_url(@workflow_run.token_id, @workflow_run.id, host: Configuration.obs_url) }
+     else
+-      { context: "OBS: #{@event_payload[:package]} - #{@event_payload[:repository]}/#{@event_payload[:arch]}",
++      { context: "OBS: #{@event_payload[:repository]}/#{@event_payload[:arch]}",
+         target_url: Rails.application.routes.url_helpers.package_show_url(@event_payload[:project], @event_payload[:package], host: Configuration.obs_url) }
+     end
+   end
+-- 
+2.20.1
+
