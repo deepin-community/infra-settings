@@ -1,0 +1,30 @@
+From d8b9d41e024c742856d0d5dd1ac31527025ab6ac Mon Sep 17 00:00:00 2001
+From: wurongjie <wurongjie@deepin.org>
+Date: Wed, 15 Mar 2023 17:37:40 +0800
+Subject: [PATCH 1/2] feat: Add linglong build support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+支持检测linglong.yaml文件并触发相关构建
+
+Log:
+---
+ src/backend/bs_srcserver | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/backend/bs_srcserver b/src/backend/bs_srcserver
+index 85fec98916..5642c2bf88 100755
+--- a/src/backend/bs_srcserver
++++ b/src/backend/bs_srcserver
+@@ -939,6 +939,7 @@ sub findfile {
+   return $files{'snapcraft.yaml'} if $ext eq 'snapcraft';
+   return (grep {/flatpak\.(?:ya?ml|json)$/} sort keys %$files)[0] if $ext eq 'flatpak';
+   return (grep {/mkosi\.*/} sort keys %$files)[0] if $ext eq 'mkosi';
++  return $files{'linglong.yaml'} if $files{'linglong.yaml'} && $ext eq 'linglong';
+ 
+   my $packid = $rev->{'package'};
+   $packid = $1 if $rev->{'originpackage'} && $rev->{'originpackage'} =~ /:([^:]+)$/;
+-- 
+2.20.1
+

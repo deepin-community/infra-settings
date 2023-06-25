@@ -1,0 +1,257 @@
+From c38690c0dd5654aedfa13aac3841a706de984d2f Mon Sep 17 00:00:00 2001
+From: Liu Heng <liuheng@deepin.org>
+Date: Tue, 10 Jan 2023 14:43:12 +0800
+Subject: [PATCH 1/4] feat: add some deepin customization requirements
+
+add @CHANGELOG@ versionfomat to get main version from debian/changelog
+add @DEEPIN_OFFSET@ versionformat to get commit offset from last modify debian/changelog
+
+for deepin-community repo, need to delete debian/gbp.conf for unified tag identification
+tag locally for Modifing the source code directly instead of patching
+
+add .obsinfo file genrated for obs-service-set_version
+
+log:
+---
+ TarSCM/archive.py | 49 ++++++++++++++++++++++++++++++++-----
+ TarSCM/cli.py     |  1 +
+ TarSCM/scm/git.py | 61 ++++++++++++++++++++++++++++++++++++++++++++++-
+ TarSCM/tasks.py   |  1 +
+ 4 files changed, 105 insertions(+), 7 deletions(-)
+
+diff --git a/TarSCM/archive.py b/TarSCM/archive.py
+index bb28fb2..1a1ee78 100644
+--- a/TarSCM/archive.py
++++ b/TarSCM/archive.py
+@@ -242,19 +242,40 @@ class Tar(BaseArchive):
+ 
+         os.chdir(cwd)
+ 
+-
+ class Gbp(BaseArchive):
+ 
+     def create_archive(self, scm_object, **kwargs):
+         """Create Debian source artefacts using git-buildpackage.
+         """
+-        args = kwargs['cli']
+-        version = kwargs['version']
+-
++        basename         = kwargs['basename']
++        version          = kwargs['version']
++        args             = kwargs['cli']
++        commit           = scm_object.get_current_commit()
++        branch           = scm_object.get_current_branch()
+         (workdir, topdir) = os.path.split(scm_object.clone_dir)
++        tstamp = self.helpers.get_timestamp(scm_object, args, topdir)
+ 
+         cwd = os.getcwd()
+         os.chdir(workdir)
++        
++        if os.path.exists(scm_object.clone_dir + "/debian/gbp.conf"):
++            logging.info("removing gbp.conf")
++            os.remove(scm_object.clone_dir + "/debian/gbp.conf")
++
++        #upstreamversion = version.split('-')[0]
++        upstreamversion_end = version.rfind('-')
++        upstreamversion = version[:upstreamversion_end]
++        if upstreamversion.__contains__(':'):
++            upstreamversion = upstreamversion.split(':')[1]
++        if upstreamversion.__contains__('~'):
++            upstreamversion = upstreamversion.replace('~', '_')
++
++        upstreamversion = "obsbuild/" + upstreamversion
++
++        logging.info("upstream version: %s" % upstreamversion)
++
++        cmd = ['git', 'tag', upstreamversion]
++        rcode,res = self.helpers.run_cmd(cmd, scm_object.clone_dir)
+ 
+         if not args.revision:
+             revision = 'origin/master'
+@@ -262,7 +283,7 @@ class Gbp(BaseArchive):
+             revision = 'origin/' + args.revision
+ 
+         command = ['gbp', 'buildpackage', '--git-notify=off',
+-                   '--git-force-create', '--git-cleaner="true"']
++                   '--git-force-create', '--git-cleaner="true"', '--git-upstream-tag=obsbuild/%(version)s']
+ 
+         # we are not on a proper local branch due to using git-reset but we
+         # anyway use the --git-export option
+@@ -355,9 +376,11 @@ class Gbp(BaseArchive):
+             logging.info("Files:")
+             for line in match.strip().split("\n"):
+                 fname = line.strip().split(' ')[2]
+-                logging.info(" %s", fname)
+                 input_file = os.path.join(workdir, fname)
+                 output_file = os.path.join(args.outdir, fname)
++                if not os.path.exists(input_file):
++                    continue
++                logging.info(" %s", fname)
+ 
+                 filename_matches_dsc = fnmatch.fnmatch(fname, '*.dsc')
+                 if (args.gbp_dch_release_update and filename_matches_dsc):
+@@ -369,4 +392,18 @@ class Gbp(BaseArchive):
+ 
+                 shutil.copy(input_file, output_file)
+ 
++        # write meta data
++        infofile = os.path.join(args.outdir, basename + '.obsinfo')
++        logging.debug("Writing to obsinfo file '%s'", infofile)
++        metafile = open(infofile, "w")
++        metafile.write("name: " + basename + "\n")
++        metafile.write("branch: " + branch + "\n")
++        metafile.write("version: " + version + "\n")
++        metafile.write("mtime: " + str(tstamp) + "\n")
++
++        if commit:
++            metafile.write("commit: " + commit + "\n")
++
++        metafile.close()
++        self.metafile       = metafile.name
+         os.chdir(cwd)
+diff --git a/TarSCM/cli.py b/TarSCM/cli.py
+index 17ecf4e..396e9bd 100644
+--- a/TarSCM/cli.py
++++ b/TarSCM/cli.py
+@@ -58,6 +58,7 @@ class Cli():
+         self.user = None
+         self.keyring_passphrase = None
+         self.changesgenerate = False
++        #  self.target_repository_url = None
+ 
+     def parse_args(self, options):
+         parser = argparse.ArgumentParser(description='Git Tarballs')
+diff --git a/TarSCM/scm/git.py b/TarSCM/scm/git.py
+index dba0ccf..345a2ae 100644
+--- a/TarSCM/scm/git.py
++++ b/TarSCM/scm/git.py
+@@ -147,6 +147,15 @@ class Git(Scm):
+         except SystemExit as exc:
+             os.removedirs(os.path.join(wdir, self.clone_dir))
+             raise exc
++        #if self.args.target_repository_url:
++        #    add_upstream_command = self._get_scm_cmd() + ['remote', 'add', 'upstream', self.args.target_repository_url]
++        #    self.helpers.safe_run(
++        #        add_upstream_command, cwd=self.clone_dir, interactive=sys.stdout.isatty()
++        #    )
++        #    fetch_tags_command = self._get_scm_cmd() + ['remote', 'update']
++        #    self.helpers.safe_run(
++        #        fetch_tags_command, cwd=self.clone_dir, interactive=sys.stdout.isatty()
++        #    )
+         if self.partial_clone:
+             config_command = self._get_scm_cmd() + ['config', '--local',
+                                                     'extensions.partialClone',
+@@ -285,6 +294,17 @@ class Git(Scm):
+             versionformat = self._detect_version_tag_offset(
+                 self._parent_tag,
+                 versionformat)
++
++        if re.match('.*@CHANGELOG@.*', versionformat):
++            versionformat = self._read_changelog_verson(
++                self._parent_tag,
++                versionformat
++            )
++        if re.match('.*@DEEPIN_OFFSET@.*', versionformat):
++            versionformat = self._detect_deepin_version_offset(
++                versionformat
++            )
++
+         log_cmd = self._get_scm_cmd() + ['log', '-n1', '--date=format:%Y%m%d',
+                                          '--no-show-signature',
+                                          "--pretty=format:%s" % versionformat]
+@@ -343,6 +363,45 @@ class Git(Scm):
+                                versionformat)
+         return versionformat
+ 
++    def _read_changelog_verson(self, parent_tag, versionformat):
++        cmd = ["dpkg-parsechangelog", "-S", "Version"]
++        rcode, out = self.helpers.run_cmd(cmd, self.clone_dir)
++        if rcode:
++            msg = "\033[31m@CHANGELOG@ can not be expanded: {}\033[0m"
++            msg = msg.format(out)
++            sys.exit(msg)
++        version = out.strip()
++        versionformat = re.sub('@CHANGELOG@', version,
++                                versionformat)
++        return versionformat
++
++    def _detect_deepin_version_offset(self, versionformat):
++        cmd = self._get_scm_cmd()
++        cmd.extend(["log", "--pretty=oneline", "-n1", "debian/changelog"])
++        rcode, out = self.helpers.safe_run(cmd, self.clone_dir)
++        if rcode:
++            msg = "\033[31m@DEEPIN_OFFSET@ can not be expanded: {}\033[0m"
++            msg = msg.format(out)
++            sys.exit(msg)
++        changelogid = out.strip().split('\n')[-1].split(' ')[0]
++        cmd = self._get_scm_cmd()
++        cmd.extend(['rev-list', '--count', changelogid + '..HEAD'])
++        rcode, out = self.helpers.run_cmd(
++            cmd=cmd, cwd=self.clone_dir
++        )
++        if rcode:
++            msg = "\033[31m@DEEPIN_OFFSET@ can not be expanded: {}\033[0m"
++            msg = msg.format(out)
++            sys.exit(msg)
++        deepin_offset = out.strip()
++        if not deepin_offset.__eq__('0'):
++            deepin_offset = '+u' + deepin_offset.rjust(3,'0')
++        else:
++            deepin_offset = ""
++        versionformat = re.sub('@DEEPIN_OFFSET@', deepin_offset,
++                               versionformat)
++        return versionformat
++
+     def get_timestamp(self):
+         data = {"parent_tag": None, "versionformat": "%ct"}
+         timestamp = self.detect_version(data)
+@@ -616,4 +675,4 @@ class Git(Scm):
+         if not revision:
+             logging.debug("No signed tag found!")
+ 
+-        return revision
++        return revision
+\ No newline at end of file
+diff --git a/TarSCM/tasks.py b/TarSCM/tasks.py
+index cefff3a..5f02afe 100644
+--- a/TarSCM/tasks.py
++++ b/TarSCM/tasks.py
+@@ -175,6 +175,7 @@ class Tasks():
+             args.url = "https://github.com/"
+             args.url += dat['pull_request']['head']['repo']['full_name']
+             args.revision = dat['pull_request']['head']['sha']
++           # args.target_repository_url = "https://github.com/" + dat['target_repository_full_name'] + ".git"
+ 
+         return args
+ 
+-- 
+2.20.1
+
+
+From eb7f7f7ca58892b3da7bd7604d1d56adc1026f18 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Sun, 16 Apr 2023 16:05:12 +0800
+Subject: [PATCH 2/4] fix: orig.tar contains debian/ directory
+
+use git archive gitattributes exclude debian/ directory
+---
+ TarSCM/archive.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/TarSCM/archive.py b/TarSCM/archive.py
+index 1a1ee78..1640414 100644
+--- a/TarSCM/archive.py
++++ b/TarSCM/archive.py
+@@ -262,6 +262,10 @@ class Gbp(BaseArchive):
+             logging.info("removing gbp.conf")
+             os.remove(scm_object.clone_dir + "/debian/gbp.conf")
+ 
++        # ignore debian directory
++        with open(os.path.join(scm_object.clone_dir, ".git/info/attributes"), "a+") as f:
++            f.write("./debian/ export-ignore\n")
++
+         #upstreamversion = version.split('-')[0]
+         upstreamversion_end = version.rfind('-')
+         upstreamversion = version[:upstreamversion_end]
+-- 
+2.20.1
