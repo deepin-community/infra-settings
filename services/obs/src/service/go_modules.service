@@ -1,0 +1,19 @@
+<service name="go_modules">
+  <summary>OBS Source Service to download, verify and vendor Go module dependency sources</summary>
+  <description>This service for Go applications creates a vendor.tar.gz of Go module dependencies allowing fully offline builds in OBS. The service extracts Go application sources, reads the files go.mod and go.sum, then downloads and verifies Go module dependencies. The generated tarball will unpack to directory vendor which enables vendor mode. In vendor mode, the contents of the vendor directory will be used to load packages instead of the network or local module cache.</description>
+  <parameter name="strategy">
+    <description>Choose the strategy this service runs in. Values: vendor. Default: vendor</description>
+  </parameter>
+  <parameter name="archive">
+    <description>Specify the Go application source archive that contains go.mod and go.sum. Values: app-x.y.z.tar.gz. Default: None, will use autodetection</description>
+  </parameter>
+  <parameter name="compression">
+    <description>Specify the compression method for the generated vendor tarball. When using "tar" no compression is applied. Values: gz, zst. Default: "gz".</description>
+  </parameter>
+  <parameter name="basename">
+    <description>Normally the go_modules service is able to determine the name of the top directory. Should this not be possible for some reason, use this option to specify. Default: None.</description>
+  </parameter>
+  <parameter name="subdir">
+    <description>If go.mod is not available in the top directory of the archive, specify its path (relative to the top directory). Default: None.</description>
+  </parameter>
+</service>
