@@ -64,7 +64,6 @@ branch-protection:
 tide:
   queries:
   - labels:
-    - lgtm
     - approved
     missingLabels:
     - needs-rebase
@@ -73,6 +72,8 @@ tide:
     - do-not-merge/invalid-owners-file
     orgs:
     - deepin-community
+    merge_method:
+      deepin-community: rebase
 
 decorate_all_jobs: true
 #periodics:

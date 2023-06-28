@@ -48,6 +48,10 @@ data:
         - wip
         - yuks
         - welcome
+    approve:
+    - repos:
+      - deepin-community
+      require_self_approval: false
     triggers:
     - repos:
       - peeweep-test
