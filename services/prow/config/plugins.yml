@@ -37,6 +37,7 @@ approve:
   - peeweep-test
   - deepin-community
   require_self_approval: true
+  lgtm_acts_as_approve: true
 triggers:
 - repos:
   - peeweep-test
