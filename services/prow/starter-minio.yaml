@@ -50,8 +50,9 @@ data:
         - welcome
     approve:
     - repos:
+      - peeweep-test
       - deepin-community
-      require_self_approval: false
+      require_self_approval: true
     triggers:
     - repos:
       - peeweep-test
@@ -231,6 +232,11 @@ data:
         - wip
         - yuks
         - welcome
+    approve:
+    - repos:
+      - peeweep-test
+      - deepin-community
+      require_self_approval: true
     triggers:
     - repos:
       - peeweep-test
