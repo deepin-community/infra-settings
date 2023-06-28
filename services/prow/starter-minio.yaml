@@ -541,6 +541,8 @@ spec:
     spec:
       serviceAccountName: "deck"
       terminationGracePeriodSeconds: 30
+      nodeSelector:
+        kubernetes.io/arch: amd64
       containers:
       - name: deck
         image: hub.deepin.com/prow/deck
@@ -677,6 +679,28 @@ spec:
       labels:
         app: tide
     spec:
+      hostAliases:
+      - ip: "10.20.64.81"
+        hostnames:
+        - "github.com"
+      - ip: "10.20.64.82"
+        hostnames:
+        - "api.github.com"
+      - ip: "10.20.64.83"
+        hostnames:
+        - "github.githubassets.com"
+      - ip: "10.20.64.84"
+        hostnames:
+        - "raw.githubusercontent.com"
+      - ip: "10.20.64.85"
+        hostnames:
+        - "collector.github.com"
+      - ip: "10.20.64.86"
+        hostnames:
+        - "avatars.githubusercontent.com"
+      - ip: "10.20.64.41"
+        hostnames:
+        - "deepinci-pushgateway.deepin.org"
       serviceAccountName: "tide"
       containers:
       - name: tide
@@ -702,6 +726,12 @@ spec:
         ports:
           - name: http
             containerPort: 8888
+        resources:
+          limits:
+            cpu: '16'
+          requests:
+            cpu: '8'
+            memory: 100Mi
         volumeMounts:
         - name: github-token
           mountPath: /etc/github
