@@ -1,0 +1,61 @@
+plugins:
+  deepin-community:
+    plugins:
+    - approve
+    - assign
+    - blunderbuss
+    - cat
+    - dog
+    - help
+    - heart
+    - hold
+    - label
+    - lgtm
+    - trigger
+    - verify-owners
+    - wip
+    - yuks
+  peeweep-test:
+    plugins:
+    - approve
+    - assign
+    - blunderbuss
+    - cat
+    - dog
+    - help
+    - heart
+    - hold
+    - label
+    - lgtm
+    - trigger
+    - verify-owners
+    - wip
+    - yuks
+    - welcome
+approve:
+- repos:
+  - peeweep-test
+  - deepin-community
+  require_self_approval: true
+triggers:
+- repos:
+  - peeweep-test
+  - deepin-community
+  trigger_github_workflows: true
+owners:
+  filenames:
+    deepin-community:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
+      owners_file_path: 'debian/deepin'
+    peeweep-test:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
+      owners_file_path: 'debian/deepin'
+welcome:
+- repos:
+  - deepin-community
+  - peeweep-test
+  # MessageTemplate is the welcome message template to post on new-contributor PRs
+  # For the info struct see prow/plugins/welcome/welcome.go's PRInfo
+  message_template: "Hi @{{.AuthorLogin}}. Thanks for your PR.:smiley:"

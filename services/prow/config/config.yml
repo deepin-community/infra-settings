@@ -71,8 +71,10 @@ tide:
     - do-not-merge/work-in-progress
     - do-not-merge/invalid-owners-file
     orgs:
+    - peeweep-test
     - deepin-community
     merge_method:
+      peeweep-test: rebase
       deepin-community: rebase
 
 decorate_all_jobs: true
