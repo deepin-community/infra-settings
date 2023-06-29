@@ -1,62 +1,69 @@
-From 4a1cbb35e7df5bba2ba955d66783ecb418ac4afe Mon Sep 17 00:00:00 2001
+From df21e3a62c58fc0f436eba85320c7b56d4aff429 Mon Sep 17 00:00:00 2001
 From: hudeng <hudeng@deepin.org>
 Date: Fri, 16 Jun 2023 16:13:58 +0800
 Subject: [PATCH] feat: workflow build job add pending status support
 
 ---
- src/api/app/models/token/workflow.rb          | 22 +++++++++++++++++++
- src/api/app/models/workflow/step.rb           |  6 +++++
+ src/api/app/models/token/workflow.rb          | 27 +++++++++++++++++++
+ src/api/app/models/workflow/step.rb           |  4 +++
  .../app/services/github_status_reporter.rb    |  2 +-
- 3 files changed, 29 insertions(+), 1 deletion(-)
+ 3 files changed, 32 insertions(+), 1 deletion(-)
 
 diff --git a/src/api/app/models/token/workflow.rb b/src/api/app/models/token/workflow.rb
-index ab9e707ea0..8d44124320 100644
+index ab9e707ea0..d0476dc0c3 100644
 --- a/src/api/app/models/token/workflow.rb
 +++ b/src/api/app/models/token/workflow.rb
-@@ -49,6 +49,28 @@ class Token::Workflow < Token
+@@ -49,6 +49,9 @@ class Token::Workflow < Token
        workflow.call
      end
      SCMStatusReporter.new(@scm_webhook.payload, @scm_webhook.payload, scm_token, workflow_run, 'success', initial_report: true).call
 +    # Report build job pending when evnt is pr or mr
-+    if workflow_run.hook_event.in?(['pull_request', 'Merge Request Hook'])
-+      @workflows.each do |workflow|
-+        workflow.steps.each do |step|
-+          if step.repositories
-+            @payload = @scm_webhook.payload.deep_symbolize_keys
-+            step.repositories.each do |repository|
-+              repository.fetch(:architectures, []).each do |architecture|
-+                name = repository.fetch(:name, '')
-+                arch = architecture
-+                @payload["repository"] = name
-+                @payload["arch"] = arch
-+                @payload["project"] = step.target_project_name
-+                @payload["package"] = ""
-+                SCMStatusReporter.new(@payload, @payload, scm_token, workflow_run, 'pending', initial_report: false).call
-+              end
-+            end
-+          end
-+        end
-+      end
-+    end
++    report_job_pending_status(workflow_run)
 +
      # Always returning validation errors to report them back to the SCM in order to help users debug their workflows
      validation_errors
    rescue Octokit::Unauthorized, Gitlab::Error::Unauthorized
+@@ -64,6 +67,30 @@ class Token::Workflow < Token
+     workflow_configuration_path == '.obs/workflows.yml'
+   end
+ 
++  def report_job_pending_status(workflow_run)
++    return unless workflow_run.hook_event.in?(['pull_request', 'Merge Request Hook'])
++
++    @workflows.each do |workflow|
++      workflow.steps.each do |step|
++        next unless step.repositories
++
++        payload = @scm_webhook.payload.deep_symbolize_keys
++        package = payload[:target_repository_full_name].split('/').last
++        step.repositories.each do |repository|
++          repository.fetch(:architectures, []).each do |architecture|
++            name = repository.fetch(:name, '')
++            arch = architecture
++            payload['repository'] = name
++            payload['arch'] = arch
++            payload['project'] = step.target_project_name
++            payload['package'] = package
++            SCMStatusReporter.new(payload, payload, scm_token, workflow_run, 'pending', initial_report: false).call
++          end
++        end
++      end
++    end
++  end
++
+   private
+ 
+   def validation_errors
 diff --git a/src/api/app/models/workflow/step.rb b/src/api/app/models/workflow/step.rb
-index cb74c60c8f..cc153d0fae 100644
+index cb74c60c8f..bd82ebb09b 100644
 --- a/src/api/app/models/workflow/step.rb
 +++ b/src/api/app/models/workflow/step.rb
-@@ -69,9 +69,15 @@ class Workflow::Step
-       end
-     when scm_webhook.tag_push_event?
-       "#{package_name}-#{scm_webhook.payload[:tag_name]}"
-+    else
-+      package_name
+@@ -72,6 +72,10 @@ class Workflow::Step
      end
    end
  
 +  def repositories
-+    return step_instructions[:repositories]
++    step_instructions[:repositories]
 +  end
 +
    protected
