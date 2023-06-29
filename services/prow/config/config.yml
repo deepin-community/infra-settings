@@ -63,19 +63,21 @@ branch-protection:
 
 tide:
   queries:
-  - labels:
+  - orgs:
+    - deepin-community
+    - peeweep-test
+    labels:
     - approved
+    excludedRepos:
+    - deepin-community/template-repository
     missingLabels:
     - needs-rebase
     - do-not-merge/hold
     - do-not-merge/work-in-progress
     - do-not-merge/invalid-owners-file
-    orgs:
-    - peeweep-test
-    - deepin-community
-    merge_method:
-      peeweep-test: rebase
-      deepin-community: rebase
+  merge_method:
+    peeweep-test: rebase
+    deepin-community: rebase
 
 decorate_all_jobs: true
 #periodics:
