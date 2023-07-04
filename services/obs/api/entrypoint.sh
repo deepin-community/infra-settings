@@ -1,7 +1,8 @@
 #!/bin/bash
 # obs db config
-sudo RAILS_ENV="production" rake db:setup
-sudo RAILS_ENV="production" rake writeconfiguration
+export RAILS_ENV=production
+sudo -E ./bin/rake db:setup
+sudo -E ./bin/rake writeconfiguration
 
 chown -R wwwrun:www /srv/www/obs/api/log /srv/www/obs/api/tmp
 chmod 777 -R /srv/www/obs/api/log /srv/www/obs/api/tmp
@@ -9,7 +10,6 @@ chmod 777 -R /srv/www/obs/api/log /srv/www/obs/api/tmp
 # sleep 20
 
 apache2ctl -D FOREGROUND &
-export RAILS_ENV=production
 sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec /srv/www/obs/api/script/delayed_job.api.rb --queue=default start -i 1030 &
 sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=scm start -i 1070 &
 sudo -E -u wwwrun /srv/www/obs/api/bin/rails sphinx:start &
