@@ -1,4 +1,11 @@
 plugins:
+  linuxdeepin:
+    plugins:
+    - assign
+    - trigger
+    - welcome
+    - cat
+    - dog
   deepin-community:
     plugins:
     - approve
@@ -15,6 +22,7 @@ plugins:
     - verify-owners
     - wip
     - yuks
+    - welcome
   peeweep-test:
     plugins:
     - approve
@@ -42,6 +50,7 @@ triggers:
 - repos:
   - peeweep-test
   - deepin-community
+  - linuxdeepin
   trigger_github_workflows: true
 owners:
   filenames:
@@ -64,6 +73,7 @@ owners:
       owners_aliases: 'OWNERS_ALIASES'
 welcome:
 - repos:
+  - linuxdeepin
   - deepin-community
   - peeweep-test
   # MessageTemplate is the welcome message template to post on new-contributor PRs
