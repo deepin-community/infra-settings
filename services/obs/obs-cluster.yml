@@ -1985,7 +1985,7 @@ spec:
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
         - name: backend-xml-config
-          mountPath: /srv/obs/configuration.xml
+          mountPath: /srv/obs/_configuration.xml
           subPath: configuration.xml
       volumes:
       - name: src-config

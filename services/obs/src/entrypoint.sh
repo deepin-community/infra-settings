@@ -1,4 +1,5 @@
 #!/bin/bash
+cp /srv/obs/_configuration.xml /srv/obs/configuration.xml
 /usr/lib/obs/server/bs_redis --logfile log/redis.log &
 /usr/lib/obs/server/bs_deltastore --logfile deltastore.log &
 /usr/lib/obs/server/bs_service --logfile log/src_service.log &
