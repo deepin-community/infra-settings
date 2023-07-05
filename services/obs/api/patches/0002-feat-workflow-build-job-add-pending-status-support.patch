@@ -1,40 +1,39 @@
-From df21e3a62c58fc0f436eba85320c7b56d4aff429 Mon Sep 17 00:00:00 2001
+From 8b46993970a2e88be41fef2995c567d7e488d95f Mon Sep 17 00:00:00 2001
 From: hudeng <hudeng@deepin.org>
 Date: Fri, 16 Jun 2023 16:13:58 +0800
-Subject: [PATCH] feat: workflow build job add pending status support
+Subject: [PATCH] [src/api]: workflow build job add pending status support
 
 ---
- src/api/app/models/token/workflow.rb          | 27 +++++++++++++++++++
+ src/api/app/models/token/workflow.rb          | 26 +++++++++++++++++++
  src/api/app/models/workflow/step.rb           |  4 +++
  .../app/services/github_status_reporter.rb    |  2 +-
- 3 files changed, 32 insertions(+), 1 deletion(-)
+ 3 files changed, 31 insertions(+), 1 deletion(-)
 
 diff --git a/src/api/app/models/token/workflow.rb b/src/api/app/models/token/workflow.rb
-index ab9e707ea0..d0476dc0c3 100644
+index 6a8424a972..3de5e10b16 100644
 --- a/src/api/app/models/token/workflow.rb
 +++ b/src/api/app/models/token/workflow.rb
-@@ -49,6 +49,9 @@ class Token::Workflow < Token
-       workflow.call
-     end
+@@ -45,6 +45,8 @@ class Token::Workflow < Token
+     SCMStatusReporter.new(@scm_webhook.payload, @scm_webhook.payload, scm_token, workflow_run, initial_report: true).call
+     @workflows.each(&:call)
      SCMStatusReporter.new(@scm_webhook.payload, @scm_webhook.payload, scm_token, workflow_run, 'success', initial_report: true).call
 +    # Report build job pending when evnt is pr or mr
 +    report_job_pending_status(workflow_run)
-+
+ 
      # Always returning validation errors to report them back to the SCM in order to help users debug their workflows
      validation_errors
-   rescue Octokit::Unauthorized, Gitlab::Error::Unauthorized
-@@ -64,6 +67,30 @@ class Token::Workflow < Token
+@@ -61,6 +63,30 @@ class Token::Workflow < Token
      workflow_configuration_path == '.obs/workflows.yml'
    end
  
 +  def report_job_pending_status(workflow_run)
-+    return unless workflow_run.hook_event.in?(['pull_request', 'Merge Request Hook'])
++    payload = @scm_webhook.payload.deep_symbolize_keys
++    return unless workflow_run.hook_event.in?(['pull_request', 'Merge Request Hook'])# && payload[:action] != 'closed'
 +
 +    @workflows.each do |workflow|
 +      workflow.steps.each do |step|
 +        next unless step.repositories
 +
-+        payload = @scm_webhook.payload.deep_symbolize_keys
 +        package = payload[:target_repository_full_name].split('/').last
 +        step.repositories.each do |repository|
 +          repository.fetch(:architectures, []).each do |architecture|
@@ -55,10 +54,10 @@ index ab9e707ea0..d0476dc0c3 100644
  
    def validation_errors
 diff --git a/src/api/app/models/workflow/step.rb b/src/api/app/models/workflow/step.rb
-index cb74c60c8f..bd82ebb09b 100644
+index f6e5ed6e12..9473d57555 100644
 --- a/src/api/app/models/workflow/step.rb
 +++ b/src/api/app/models/workflow/step.rb
-@@ -72,6 +72,10 @@ class Workflow::Step
+@@ -79,6 +79,10 @@ class Workflow::Step
      end
    end
  
@@ -84,4 +83,3 @@ index a94e2bf8ca..afdd6bba26 100644
    end
 -- 
 2.20.1
-
