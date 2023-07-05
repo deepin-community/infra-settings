@@ -1,0 +1,23 @@
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: infra-settingsdeploy
+spec:
+  replicas: 1
+  template:
+    spec:
+      repository: deepin-community/infra-settings
+      labels:
+      - infra-setting-runner
+
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: deepin-community-runners
+spec:
+  replicas: 2
+  template:
+    spec:
+      organization: deepin-community
