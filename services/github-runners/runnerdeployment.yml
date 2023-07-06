@@ -10,6 +10,25 @@ spec:
       repository: deepin-community/infra-settings
       labels:
       - infra-setting-runner
+      hostAliases:
+      - ip: "10.20.64.81"
+        hostnames:
+        - "github.com"
+      - ip: "10.20.64.82"
+        hostnames:
+        - "api.github.com"
+      - ip: "10.20.64.83"
+        hostnames:
+        - "github.githubassets.com"
+      - ip: "10.20.64.84"
+        hostnames:
+        - "raw.githubusercontent.com"
+      - ip: "10.20.64.85"
+        hostnames:
+        - "collector.github.com"
+      - ip: "10.20.64.86"
+        hostnames:
+          - "avatars.githubusercontent.com"
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
@@ -21,3 +40,22 @@ spec:
   template:
     spec:
       organization: deepin-community
+      hostAliases:
+      - ip: "10.20.64.81"
+        hostnames:
+        - "github.com"
+      - ip: "10.20.64.82"
+        hostnames:
+        - "api.github.com"
+      - ip: "10.20.64.83"
+        hostnames:
+        - "github.githubassets.com"
+      - ip: "10.20.64.84"
+        hostnames:
+        - "raw.githubusercontent.com"
+      - ip: "10.20.64.85"
+        hostnames:
+        - "collector.github.com"
+      - ip: "10.20.64.86"
+        hostnames:
+          - "avatars.githubusercontent.com"
