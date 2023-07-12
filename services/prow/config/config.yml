@@ -75,6 +75,37 @@ tide:
     - do-not-merge/hold
     - do-not-merge/work-in-progress
     - do-not-merge/invalid-owners-file
+  - author: deepin-ci-robot
+    labels: # deepin-ci-robot should only create autobump PR with this label
+    - skip-review
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/blocked-paths
+    - do-not-merge/contains-merge-commits
+    - do-not-merge/hold
+    - do-not-merge/invalid-commit-message
+    - do-not-merge/invalid-owners-file
+    - do-not-merge/release-note-label-needed
+    - do-not-merge/work-in-progress
+    - needs-rebase
+    orgs:
+    - peeweep-test
+    - deepin-community
+  - author: deepin-community-ci-bot
+    labels: # deepin-community-ci-bot should only create autobump PR with this label
+    - skip-review
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/blocked-paths
+    - do-not-merge/contains-merge-commits
+    - do-not-merge/hold
+    - do-not-merge/invalid-commit-message
+    - do-not-merge/invalid-owners-file
+    - do-not-merge/release-note-label-needed
+    - do-not-merge/work-in-progress
+    - needs-rebase
+    repos:
+    - deepin-community/SIG
   merge_method:
     peeweep-test: rebase
     deepin-community: rebase
