@@ -1,0 +1,28 @@
+name: prow plugins configuration
+on:
+  pull_request_target:
+    types: [opened, synchronize, closed]
+    paths:
+      - "services/prow/config/plugins.yml"
+      - "services/prow/config/config.yml"
+
+env:
+  KUBECONFIG: ${{ secrets.KUBECONFIG }}
+
+jobs:
+  plugins-config:
+    if: github.event.pull_request.merged
+    name: plugins-config
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: apply plugins config
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG" | base64 -d > ~/.kube/config
+          #kubectl --kubeconfig ~/.kube/config get runner
+          KUBECONFIG=~/.kube/config make -C services/prow/config
