@@ -8,8 +8,8 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: api-apache-config
+  namespace: obs
+  name: api-apache-config
 data:
   obs.conf: |
     #Listen 82
@@ -162,8 +162,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: api-db-config
+  namespace: obs
+  name: api-db-config
 data:
   database.yml: |
     # MySQL (default setup).  Versions 4.1 and 5.0 are recommended.
@@ -218,8 +218,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: api-options-config
+  namespace: obs
+  name: api-options-config
 data:
   options.yml: |
     #
@@ -453,8 +453,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: src-config
+  namespace: obs
+  name: src-config
 data:
   BSConfig.pm: |
     #
@@ -557,7 +557,7 @@ data:
     # (2) means that all of the package data fetches get delayed.
     # our $sched_startupmode = 0;
 
-    # Disable fdatasync calls, increases the speed, but may lead to data 
+    # Disable fdatasync calls, increases the speed,but may lead to data 
     # corruption on system crash when the filesystem does not guarantees
     # data write before rename.
     # It is esp. required on XFS filesystem.
@@ -626,7 +626,7 @@ data:
     our $sign = "/usr/bin/sign";
     #Extend sign call with project name as argument "--project $NAME"
     #our $sign_project = 1;
-    #Global sign key 
+    # Global sign key
     our $keyfile = "/srv/obs/obs-default-gpg.asc";
     our $gpg_standard_key = "/srv/obs/obs-default-gpg.asc";
 
@@ -642,7 +642,7 @@ data:
     #
     # run a script to check if the worker is good enough for the job
     #our workerhostcheck = 'my_check_script';
-    # 
+    #
     # Allow to build as root, exceptions per package
     # the keys are actually anchored regexes
     # our $norootexceptions = { "my_project/my_package" => 1, "openSUSE:Factory.*/installation-images" => 1 };
