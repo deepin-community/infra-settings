@@ -71,6 +71,9 @@ owners:
     deepin-community/Repository-Manager:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
+    deepin-community/.github:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
 welcome:
 - repos:
   - linuxdeepin
