@@ -28,7 +28,7 @@ spec:
         - "collector.github.com"
       - ip: "10.20.64.86"
         hostnames:
-          - "avatars.githubusercontent.com"
+        - "avatars.githubusercontent.com"
       containers:
       - name: runner
         image: hub.deepin.com/deepincicd/github-runner-dind
@@ -62,7 +62,7 @@ spec:
         - "collector.github.com"
       - ip: "10.20.64.86"
         hostnames:
-          - "avatars.githubusercontent.com"
+        - "avatars.githubusercontent.com"
       containers:
       - name: runner
         image: hub.deepin.com/deepincicd/github-runner-dind
@@ -96,7 +96,7 @@ spec:
         - "collector.github.com"
       - ip: "10.20.64.86"
         hostnames:
-          - "avatars.githubusercontent.com"
+        - "avatars.githubusercontent.com"
       containers:
       - name: runner
         image: hub.deepin.com/deepincicd/github-runner-dind
