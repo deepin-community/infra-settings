@@ -6,6 +6,7 @@ plugins:
     - welcome
     - cat
     - dog
+    - updatebot
   deepin-community:
     plugins:
     - approve
@@ -40,10 +41,17 @@ plugins:
     - wip
     - yuks
     - welcome
+    - updatebot
 approve:
 - repos:
   - peeweep-test
   - deepin-community
+  - linuxdeepin/dtk
+  - linuxdeepin/dtkcommon
+  - linuxdeepin/dtkcore
+  - linuxdeepin/dtkgui
+  - linuxdeepin/dtkwidget
+  - linuxdeepin/dtkdeclarative
   require_self_approval: true
   #lgtm_acts_as_approve: true
 triggers:
@@ -62,6 +70,10 @@ owners:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
       owners_file_path: 'debian/deepin'
+    linuxdeepin:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
+      owners_file_path: 'debian/deepin'
     deepin-community/rfcs:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
@@ -74,6 +86,9 @@ owners:
     deepin-community/.github:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
+    peeweep-test/infra-settings:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
 welcome:
 - repos:
   - linuxdeepin
@@ -82,3 +97,7 @@ welcome:
   # MessageTemplate is the welcome message template to post on new-contributor PRs
   # For the info struct see prow/plugins/welcome/welcome.go's PRInfo
   message_template: "Hi @{{.AuthorLogin}}. Thanks for your PR.:smiley:"
+updatebot:
+  repos:
+    - linuxdeepin/dtk
+    - peeweep-test/dtk

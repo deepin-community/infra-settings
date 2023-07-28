@@ -75,6 +75,21 @@ tide:
     - do-not-merge/hold
     - do-not-merge/work-in-progress
     - do-not-merge/invalid-owners-file
+  - repos:
+    - linuxdeepin/dtk
+    - linuxdeepin/dtkcommon
+    - linuxdeepin/dtkcore
+    - linuxdeepin/dtkgui
+    - linuxdeepin/dtkwidget
+    - linuxdeepin/dtkdeclarative
+    labels:
+    - lgtm
+    - approved
+    missingLabels:
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - do-not-merge/invalid-owners-file
+    - needs-rebase
   - author: deepin-ci-robot
     labels: # deepin-ci-robot should only create autobump PR with this label
     - skip-review
@@ -91,6 +106,13 @@ tide:
     orgs:
     - peeweep-test
     - deepin-community
+    repos:
+    - linuxdeepin/dtk
+    - linuxdeepin/dtkcommon
+    - linuxdeepin/dtkcore
+    - linuxdeepin/dtkgui
+    - linuxdeepin/dtkwidget
+    - linuxdeepin/dtkdeclarative
   - author: deepin-community-ci-bot
     labels: # deepin-community-ci-bot should only create autobump PR with this label
     - skip-review
@@ -109,6 +131,7 @@ tide:
   merge_method:
     peeweep-test: rebase
     deepin-community: rebase
+    linuxdeepin: rebase
 
 decorate_all_jobs: true
 #periodics:
