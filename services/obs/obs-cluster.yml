@@ -14,7 +14,7 @@ data:
   obs.conf: |
     #Listen 82
     # May needed on old distributions or after an update from them.
-    Listen 30443
+    Listen 30543
 
     # Passenger defaults
     PassengerSpawnMethod "smart"
@@ -50,7 +50,7 @@ data:
 
 
     # OBS WEBUI & API
-    <VirtualHost *:30443>
+    <VirtualHost *:30543>
             ServerName build-test.deepin.com
             # ServerName build.deepin.com
             # ServerName localhost
@@ -248,7 +248,7 @@ data:
 
       # api access to this instance
       frontend_host: localhost
-      frontend_port: 30443
+      frontend_port: 30543
       frontend_protocol: https
 
       extended_backend_log: false
@@ -488,14 +488,13 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 127.0.0.1; # FQDN of the WebUI/API server if it's not $hostname
+    my $frontend = "api"; # FQDN of the WebUI/API server if it's not $hostname
+    my $backend = "backend";
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
-      '^::1$' => 'rw',    # only the localhost can write to the backend
-      '^127\..*' => 'rw', # only the localhost can write to the backend
-      "^$ip\$" => 'rw',   # Permit IP of FQDN
-      ".*" => 'rw',   # backend-main
+      '.*' => 'rw',   # backend-main
+      "^10.42.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
     };
 
@@ -503,6 +502,8 @@ data:
     if ($frontend) {
       my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
       $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
+      my $backendip = quotemeta inet_ntoa(inet_aton($backend) || inet_aton("localhost"));
+      $ipaccess->{$backendip} = 'rw' ;
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
@@ -557,7 +558,7 @@ data:
     # (2) means that all of the package data fetches get delayed.
     # our $sched_startupmode = 0;
 
-    # Disable fdatasync calls, increases the speed,but may lead to data 
+    # Disable fdatasync calls, increases the speed, but may lead to data
     # corruption on system crash when the filesystem does not guarantees
     # data write before rename.
     # It is esp. required on XFS filesystem.
@@ -626,7 +627,7 @@ data:
     our $sign = "/usr/bin/sign";
     #Extend sign call with project name as argument "--project $NAME"
     #our $sign_project = 1;
-    # Global sign key
+    #Global sign key
     our $keyfile = "/srv/obs/obs-default-gpg.asc";
     our $gpg_standard_key = "/srv/obs/obs-default-gpg.asc";
 
@@ -749,8 +750,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: backend-config
+  namespace: obs
+  name: backend-config
 data:
   BSConfig.pm: |
     #
@@ -784,14 +785,13 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 172.25.3.1; # FQDN of the WebUI/API server if it's not $hostname
+    my $frontend = api; # FQDN of the WebUI/API server if it's not $hostname
+    my $src = "src";
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
-      '^::1$' => 'rw',    # only the localhost can write to the backend
-      '^127\..*' => 'rw', # only the localhost can write to the backend
-      "^$ip\$" => 'rw',   # Permit IP of FQDN
-      ".*" => 'rw',   # Permit IP of FQDN
+      '.*' => 'rw',   # Permit IP of FQDN
+      "^10.42.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
     };
 
@@ -799,6 +799,8 @@ data:
     if ($frontend) {
       my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
       $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
+      my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
+      $ipaccess->{$srcip} = 'rw' ;
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
@@ -919,7 +921,7 @@ data:
     #our $sign = '/usr/bin/sign';
     #Extend sign call with project name as argument "--project $NAME"
     #our $sign_project = 1;
-    #Global sign key 
+    #Global sign key
     #our $keyfile = '/srv/obs/openSUSE-Build-Service.asc';
     #our $gpg_standard_key = "/etc/obs-default-gpg.asc";
 
@@ -935,7 +937,7 @@ data:
     #
     # run a script to check if the worker is good enough for the job
     #our workerhostcheck = 'my_check_script';
-    # 
+    #
     # Allow to build as root, exceptions per package
     # the keys are actually anchored regexes
     # our $norootexceptions = { "my_project/my_package" => 1, "openSUSE:Factory.*/installation-images" => 1 };
@@ -1042,8 +1044,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: backend-server-config
+  namespace: obs
+  name: backend-server-config
 data:
   obs-server: |
     #
@@ -1525,8 +1527,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: backend-xml-config
+  namespace: obs
+  name: backend-xml-config
 data:
   configuration.xml: |
     <configuration>
@@ -1562,8 +1564,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: worker-config
+  namespace: obs
+  name: worker-config
 data:
   obs-worker: |
     # Nice level
@@ -1720,8 +1722,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: db-config
+  namespace: obs
+  name: db-config
 data:
   obs-worker: |
 
@@ -1730,8 +1732,8 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    namespace: obs
-    name: db-init-config
+  namespace: obs
+  name: db-init-config
 data:
   db-init.sql: |
     create database api_production;
@@ -1901,7 +1903,7 @@ spec:
         image: hub.deepin.com/k3s/obs/api:latest
         imagePullPolicy: Always
         ports:
-        - containerPort: 30443
+        - containerPort: 30543
         volumeMounts:
         - name: api-apache-config
           mountPath: /etc/apache2/vhosts.d/obs.conf
@@ -1946,10 +1948,25 @@ spec:
     app: api
   ports:
   - protocol: TCP
-    port: 30443
-    targetPort: 30443
-    nodePort: 30443
+    port: 30543
+    targetPort: 30543
+    nodePort: 30543
   type: NodePort
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  namespace: obs
+  labels:
+    app: src-data
+  name: src-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
 
 ---
 # Obs Src Deployment
@@ -1968,6 +1985,25 @@ spec:
       labels:
         app: src
     spec:
+      hostAliases:
+      - ip: "10.20.64.81"
+        hostnames:
+        - "github.com"
+      - ip: "10.20.64.82"
+        hostnames:
+        - "api.github.com"
+      - ip: "10.20.64.83"
+        hostnames:
+        - "github.githubassets.com"
+      - ip: "10.20.64.84"
+        hostnames:
+        - "raw.githubusercontent.com"
+      - ip: "10.20.64.85"
+        hostnames:
+        - "collector.github.com"
+      - ip: "10.20.64.86"
+        hostnames:
+        - "avatars.githubusercontent.com"
       nodeSelector:
         kubernetes.io/arch: amd64
       containers:
@@ -1984,6 +2020,8 @@ spec:
         - name: backend-server-config
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
+        - name: src-data
+          mountPath: /srv/obs
         - name: backend-xml-config
           mountPath: /srv/obs/_configuration.xml
           subPath: configuration.xml
@@ -2000,6 +2038,9 @@ spec:
           items:
           - key: obs-server
             path: obs-server
+      - name: src-data
+        persistentVolumeClaim:
+          claimName: src-data
       - name: backend-xml-config
         configMap:
           name: backend-xml-config
@@ -2124,65 +2165,65 @@ spec:
     targetPort: 5252
   type: ClusterIP
 
----
-# Obs Scheduler Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  namespace: obs
-  name: scheduler
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: scheduler
-  template:
-    metadata:
-      labels:
-        app: scheduler
-    spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
-      containers:
-      - name: scheduler
-        image: hub.deepin.com/k3s/obs/scheduler:latest
-        imagePullPolicy: Always
-        volumeMounts:
-        - name: backend-config
-          mountPath: /usr/lib/obs/server/BSConfig.pm
-          subPath: BSConfig.pm
-        - name: backend-server-config
-          mountPath: /etc/sysconfig/obs-server
-          subPath: obs-server
-        - name: backend-data
-          mountPath: /srv/obs
-        - name: backend-xml-config
-          mountPath: /srv/obs/configuration.xml
-          subPath: configuration.xml
-      volumes:
-      - name: backend-config
-        configMap:
-          name: backend-config
-          items:
-          - key: BSConfig.pm
-            path: BSConfig.pm
-      - name: backend-server-config
-        configMap:
-          name: backend-server-config
-          items:
-          - key: obs-server
-            path: obs-server
-      - name: backend-data
-        persistentVolumeClaim:
-          claimName: backend-data
-      - name: backend-xml-config
-        configMap:
-          name: backend-xml-config
-          items:
-          - key: configuration.xml
-            path: configuration.xml
-      imagePullSecrets:
-      - name: deepinhub
+#---
+## Obs Scheduler Deployment
+#apiVersion: apps/v1
+#kind: Deployment
+#metadata:
+#  namespace: obs
+#  name: scheduler
+#spec:
+#  replicas: 1
+#  selector:
+#    matchLabels:
+#      app: scheduler
+#  template:
+#    metadata:
+#      labels:
+#        app: scheduler
+#    spec:
+#      nodeSelector:
+#        kubernetes.io/arch: amd64
+#      containers:
+#      - name: scheduler
+#        image: hub.deepin.com/k3s/obs/scheduler:latest
+#        imagePullPolicy: Always
+#        volumeMounts:
+#        - name: backend-config
+#          mountPath: /usr/lib/obs/server/BSConfig.pm
+#          subPath: BSConfig.pm
+#        - name: backend-server-config
+#          mountPath: /etc/sysconfig/obs-server
+#          subPath: obs-server
+#        - name: backend-data
+#          mountPath: /srv/obs
+#        - name: backend-xml-config
+#          mountPath: /srv/obs/configuration.xml
+#          subPath: configuration.xml
+#      volumes:
+#      - name: backend-config
+#        configMap:
+#          name: backend-config
+#          items:
+#          - key: BSConfig.pm
+#            path: BSConfig.pm
+#      - name: backend-server-config
+#        configMap:
+#          name: backend-server-config
+#          items:
+#          - key: obs-server
+#            path: obs-server
+#      - name: backend-data
+#        persistentVolumeClaim:
+#          claimName: backend-data
+#      - name: backend-xml-config
+#        configMap:
+#          name: backend-xml-config
+#          items:
+#          - key: configuration.xml
+#            path: configuration.xml
+#      imagePullSecrets:
+#      - name: deepinhub
 
 ---
 # Obs Worker Deployment
@@ -2265,7 +2306,7 @@ spec:
     service:
       name: api
       port:
-        number: 30443
+        number: 30543
   rules:
   - host: build-test.deepin.org
     http:
@@ -2276,4 +2317,4 @@ spec:
           service:
             name: api
             port:
-              number: 30443
+              number: 30543
