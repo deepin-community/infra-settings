@@ -47,11 +47,6 @@ approve:
   - peeweep-test
   - deepin-community
   - linuxdeepin/dtk
-  - linuxdeepin/dtkcommon
-  - linuxdeepin/dtkcore
-  - linuxdeepin/dtkgui
-  - linuxdeepin/dtkwidget
-  - linuxdeepin/dtkdeclarative
   require_self_approval: true
   #lgtm_acts_as_approve: true
 triggers:
