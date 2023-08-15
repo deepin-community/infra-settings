@@ -70,6 +70,7 @@ tide:
     - approved
     excludedRepos:
     - deepin-community/template-repository
+    - deepin-community/rfcs
     missingLabels:
     - needs-rebase
     - do-not-merge/hold
@@ -83,7 +84,6 @@ tide:
     - linuxdeepin/dtkwidget
     - linuxdeepin/dtkdeclarative
     labels:
-    - lgtm
     - approved
     missingLabels:
     - do-not-merge/hold
