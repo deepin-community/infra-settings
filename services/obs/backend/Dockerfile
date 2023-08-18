@@ -3,6 +3,9 @@ FROM opensuse/leap:15.5
 
 ENV container docker
 
+#ENV https_proxy http://10.20.8.114:10809
+#ENV http_proxy http://10.20.8.114:10809
+
 # opensuse repository mirror settings
 RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/distribution/leap/$releasever/repo/oss/' mirror-oss; \
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/distribution/leap/$releasever/repo/non-oss/' mirror-non-oss; \
@@ -10,7 +13,7 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/non-oss/' mirror-update-non-oss;
 
 RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.5/OBS:Server:Unstable.repo; \
-  zypper -n install -t pattern OBS_Server; zypper -n install gzip;zypper clean;
+  zypper -n install -t pattern OBS_Server; zypper -n install gzip wireguard-tools iptables iproute2;zypper clean;
 
 # setup obs-backend and obs-sched configuration
 RUN mkdir -p /srv/backup/; \
