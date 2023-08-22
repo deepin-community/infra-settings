@@ -33833,6 +33833,8 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
       containers:
       - args:
         - --metrics-addr=127.0.0.1:8080
