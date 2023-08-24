@@ -1,0 +1,68 @@
+From 39412c798b40ff7a05f86331aae56dc1ed819c09 Mon Sep 17 00:00:00 2001
+From: lichenggang <lichenggang@deepin.org>
+Date: Thu, 24 Aug 2023 09:12:30 +0000
+Subject: [PATCH] Add sha512 support
+
+---
+ Checksums.pm          |  6 ++++++
+ Control/FieldsCore.pm | 14 ++++++++++++--
+ 2 files changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/Checksums.pm b/Checksums.pm
+index 93bdf4b..fc18e00 100644
+--- a/Checksums.pm
++++ b/Checksums.pm
+@@ -67,6 +67,12 @@ my $CHECKSUMS = {
+        regex => qr/[0-9a-f]{64}/,
+        strong => 1,
+     },
++    sha512 => {
++        name => 'SHA-512',
++        regex => qr/[0-9a-f]{128}/,
++        strong => 1,
++    },
++
+ };
+ 
+ =item @list = checksums_get_list()
+diff --git a/Control/FieldsCore.pm b/Control/FieldsCore.pm
+index 255786f..652860b 100644
+--- a/Control/FieldsCore.pm
++++ b/Control/FieldsCore.pm
+@@ -217,6 +217,10 @@ our %FIELDS = (
+         name => 'Checksums-Sha256',
+         allowed => CTRL_PKG_SRC | CTRL_INDEX_SRC | CTRL_FILE_CHANGES | CTRL_FILE_BUILDINFO,
+     },
++    'checksums-sha512' => {
++        name => 'Checksums-Sha512',
++        allowed => CTRL_PKG_SRC | CTRL_INDEX_SRC | CTRL_FILE_CHANGES | CTRL_FILE_BUILDINFO,
++    },
+     'classes' => {
+         name => 'Classes',
+         allowed => CTRL_TESTS,
+@@ -450,6 +454,12 @@ our %FIELDS = (
+         allowed => CTRL_INDEX_PKG | CTRL_REPO_RELEASE,
+         separator => FIELD_SEP_LINE | FIELD_SEP_SPACE,
+     },
++    'sha512' => {
++        # XXX: Wrong capitalization due to historical reasons.
++        name => 'SHA512',
++        allowed => CTRL_INDEX_PKG | CTRL_REPO_RELEASE,
++        separator => FIELD_SEP_LINE | FIELD_SEP_SPACE,
++    },
+     'size' => {
+         name => 'Size',
+         allowed => CTRL_INDEX_PKG,
+@@ -606,8 +616,8 @@ my @src_dep_fields = qw(build-depends build-depends-arch build-depends-indep
+     build-conflicts build-conflicts-arch build-conflicts-indep);
+ my @bin_dep_fields = qw(pre-depends depends recommends suggests enhances
+     conflicts breaks replaces provides built-using);
+-my @src_checksums_fields = qw(checksums-md5 checksums-sha1 checksums-sha256);
+-my @bin_checksums_fields = qw(md5sum sha1 sha256);
++my @src_checksums_fields = qw(checksums-md5 checksums-sha1 checksums-sha256 checksums-sha512);
++my @bin_checksums_fields = qw(md5sum sha1 sha256 sha512);
+ 
+ our %FIELD_ORDER = (
+     CTRL_PKG_DEB() => [
+-- 
+2.35.3

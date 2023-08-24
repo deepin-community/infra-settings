@@ -13,7 +13,7 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/non-oss/' mirror-update-non-oss;
 
 RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.5/OBS:Server:Unstable.repo; \
-  zypper -n install -t pattern OBS_Server; zypper -n install gzip wireguard-tools iptables iproute2 dpkg iputils nano;zypper clean;
+  zypper -n install -t pattern OBS_Server; zypper -n install gzip wireguard-tools iptables iproute2 dpkg iputils vim;zypper clean;
 
 # setup obs-backend and obs-sched configuration
 RUN mkdir -p /srv/backup/; \
@@ -25,6 +25,13 @@ RUN mkdir -p /srv/backup/; \
 ADD config/BSConfig.pm /usr/lib/obs/server/BSConfig.pm
 ADD config/obs-server /etc/sysconfig/obs-server
 ADD config/configuration.xml /srv/obs/configuration.xml
+COPY backend/patches /patches
+
+# apply some patches
+RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0001-feat-add-deepin-auto-build-version-fromat.patch
+RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0002-dsc-Keep-everything.patch
+RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0003-feat-Add-linglong-build-support.patch
+RUN patch -p1 -d /usr/lib/perl5/vendor_perl/5.26.1/Dpkg/ < /patches/0004-Add-sha512-support.patch
 
 WORKDIR /srv/obs/
 
