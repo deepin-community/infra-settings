@@ -1,0 +1,35 @@
+From 35dfe25f7f701c3098d2d633e897e926a6a72874 Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Date: Mon, 13 Mar 2017 14:27:12 +0100
+Subject: [PATCH 2/3] dsc: Keep everything
+
+Debian package build dependencies allow for direct or indirect build
+cycles, when doing a full distribution build in OBS this means keeping
+the keep list gets very tedious very quickly.
+
+Adjust the default keep processing such that for Debian (dsc) builds
+everything is kept by default
+
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+---
+ Build.pm | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Build.pm b/Build.pm
+index 5a0a980..b5102ba 100644
+--- a/Build.pm
++++ b/Build.pm
+@@ -745,7 +745,9 @@ sub get_build {
+     @directdepsend = grep {!/^-/} splice(@directdepsend, @deps + 1);
+   }
+   my @extra = (@{$config->{'required'}}, @{$config->{'support'}});
+-  if (@{$config->{'keep'} || []}) {
++  if ($config->{'type'} eq 'dsc') {
++	  ;
++  } elsif (@{$config->{'keep'} || []}) {
+     my %keep = map {$_ => 1} (@deps, @{$config->{'keep'} || []}, @{$config->{'preinstall'}});
+     for (@{$subpacks || []}) {
+       next if $keep{$_};
+-- 
+2.20.1
+
