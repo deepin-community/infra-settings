@@ -13,7 +13,7 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/non-oss/' mirror-update-non-oss;
 
 RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.5/OBS:Server:Unstable.repo; \
-  zypper -n install -t pattern OBS_Server; zypper -n install gzip wireguard-tools iptables iproute2;zypper clean;
+  zypper -n install -t pattern OBS_Server; zypper -n install gzip wireguard-tools iptables iproute2 dpkg iputils nano;zypper clean;
 
 # setup obs-backend and obs-sched configuration
 RUN mkdir -p /srv/backup/; \
