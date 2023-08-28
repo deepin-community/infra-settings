@@ -1,0 +1,38 @@
+From 71bc1564308468619c36e9080a04a271d568d877 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Sun, 27 Aug 2023 10:18:45 +0000
+Subject: [PATCH 2/2] feat: Add loong64 support
+
+---
+ BSCando.pm | 2 ++
+ bs_publish | 1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/BSCando.pm b/BSCando.pm
+index cf68bb6..82b5b25 100644
+--- a/BSCando.pm
++++ b/BSCando.pm
+@@ -67,6 +67,8 @@ our %cando = (
+ 
+   'mips'    => [ 'mips' ],
+   'mips64'  => [ 'mips64', 'mips:mips32' ],
++  'loong64' => [ 'loong64', 'loongarch64' ],
++  'loongarch64' => [ 'loong64', 'loongarch64' ],
+ 
+   'm68k'    => [ 'm68k' ],
+ 
+diff --git a/bs_publish b/bs_publish
+index 229bd5b..b06cb96 100755
+--- a/bs_publish
++++ b/bs_publish
+@@ -906,6 +906,7 @@ ARCH.ppc64 ppc64 ppc noarch
+ ARCH.ppc64le ppc64le noarch
+ ARCH.ppc ppc noarch
+ ARCH.riscv64 riscv64 noarch
++ARCH.loong64 loong64 loongarch64 noarch
+ ARCH.sh4 sh4 noarch
+ ARCH.m68k m68k noarch
+ ARCH.aarch64 aarch64 aarch64_ilp32 noarch
+-- 
+2.35.3
+
