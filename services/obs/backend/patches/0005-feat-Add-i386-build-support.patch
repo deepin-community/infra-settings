@@ -1,0 +1,25 @@
+From 5d881558aaaa7015dbf82dbf28324cb1175d468e Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Sun, 27 Aug 2023 09:57:20 +0000
+Subject: [PATCH 1/2] feat: Add i386 build support
+
+---
+ BSCando.pm | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/BSCando.pm b/BSCando.pm
+index 1167afc..cf68bb6 100644
+--- a/BSCando.pm
++++ b/BSCando.pm
+@@ -43,7 +43,7 @@ our %cando = (
+ 
+   'i586'    => [           'i586' ],
+   'i686'    => [           'i586',         'i686' ],
+-  'x86_64'  => [ 'x86_64', 'i586:linux32', 'i686:linux32' ],
++  'x86_64'  => [ 'x86_64', 'i386:linux32', 'i586:linux32', 'i686:linux32' ],
+ 
+   'k1om'    => [           'k1om' ],
+ 
+-- 
+2.35.3
+
