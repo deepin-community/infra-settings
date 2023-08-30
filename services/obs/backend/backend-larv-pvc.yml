@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: obs
+
+---
+# Obs storage
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: backend-larv
+  namespace: obs
+  labels:
+    app: backend-larv
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obsbackend"
+  resources:
+    requests:
+      storage: 2600Gi
+  #volumeName: nfs-pv-obsbackend
