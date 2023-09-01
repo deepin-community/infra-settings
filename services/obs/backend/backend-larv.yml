@@ -819,7 +819,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: wg0-ci
+  name: wg0-larv
 data:
   wg0.conf: |
     [Interface]
@@ -879,7 +879,7 @@ spec:
         - name: backend-xml-config-larv
           mountPath: /srv/obs/configuration.xml
           subPath: configuration.xml
-        - name: wg0-ci
+        - name: wg0-larv
           mountPath: /etc/wireguard/wg0.conf
           subPath: wg0.conf
         securityContext:
@@ -919,9 +919,9 @@ spec:
           items:
           - key: configuration.xml
             path: configuration.xml
-      - name: wg0-ci
+      - name: wg0-larv
         configMap:
-          name: wg0-ci
+          name: wg0-larv
           defaultMode: 420
           items:
           - key: wg0.conf
