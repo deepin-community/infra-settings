@@ -125,7 +125,7 @@ data:
     #
     # 0 means let the operating system assign a port number
     #
-    OBS_WORKER_PORTBASE=32515
+    # OBS_WORKER_PORTBASE=32515
 
     ## Path:        Applications/OBS
     ## Description: Number of parallel compile jobs per worker
@@ -540,7 +540,7 @@ data:
     #
     # 0 means let the operating system assign a port number
 
-    OBS_WORKER_PORTBASE="32515"
+    # OBS_WORKER_PORTBASE="32515"
 
     ## Path:        Applications/OBS
     ## Description: Number of parallel compile jobs per worker
@@ -663,10 +663,6 @@ spec:
       - name: k3s-worker-ci-amd
         image: hub.deepin.com/k3s/obs/worker:latest
         imagePullPolicy: Always
-        ports:
-        - name: worker-port
-          containerPort: 32515
-          protocol: TCP
         volumeMounts:
         - name: server-config-ci
           mountPath: /etc/sysconfig/obs-server
@@ -733,10 +729,6 @@ spec:
       - name: k3s-worker-ci-arm
         image: hub.deepin.com/k3s/obs/worker:arm64-latest
         imagePullPolicy: Always
-        ports:
-        - name: worker-port
-          containerPort: 32515
-          protocol: TCP
         volumeMounts:
         - name: server-config-ci
           mountPath: /etc/sysconfig/obs-server
