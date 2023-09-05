@@ -598,7 +598,7 @@ data:
     # Enable caching requires a given directory here. Be warned, content will be
     # removed there !
     #
-    OBS_CACHE_DIR="/srv/obs/obscache"
+    OBS_CACHE_DIR="/srv/obscache"
 
     ## Path:        Applications/OBS
     ## Description: Defines the package cache size
@@ -642,12 +642,11 @@ data:
 ---
 # Obs Worker Amd64 StatefulSet
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   namespace: obs
   name: k3s-worker-ci-amd
 spec:
-  serviceName: "k3s-worker-ci-amd"
   replicas: 1
   selector:
     matchLabels:
@@ -672,6 +671,8 @@ spec:
           subPath: obs-worker
         - name: worker-data-ci
           mountPath: /srv/obs
+        - name: worker-cache
+          mountPath: /srv/obscache
         securityContext:
           privileged: true
           capabilities:
@@ -691,29 +692,22 @@ spec:
           - key: obs-worker
             path: obs-worker
       - name: worker-data-ci
-        persistentVolumeClaim:
-          claimName: worker-data-ci
-      #hostname: k3s-worker-ci-amd-0
+        emptyDir: {}
+      - name: worker-cache
+        hostPath:
+          path: /storage/OBS/obscache/
+          type: DirectoryOrCreate
       imagePullSecrets:
       - name: deepinhub
-  volumeClaimTemplates:
-    - metadata:
-        name: worker-data-ci
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 160Gi
 
 ---
 # Obs Worker Arm64 StatefulSet
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   namespace: obs
   name: k3s-worker-ci-arm
 spec:
-  serviceName: "k3s-worker-ci-arm"
   replicas: 1
   selector:
     matchLabels:
@@ -738,6 +732,8 @@ spec:
           subPath: obs-worker
         - name: worker-data-ci
           mountPath: /srv/obs
+        - name: worker-cache
+          mountPath: /srv/obscache
         securityContext:
           privileged: true
           capabilities:
@@ -757,16 +753,10 @@ spec:
           - key: obs-worker
             path: obs-worker
       - name: worker-data-ci
-        persistentVolumeClaim:
-          claimName: worker-data-ci
-      #hostname: k3s-worker-ci-arm-0
+        emptyDir: {}
+      - name: worker-cache
+        hostPath:
+          path: /storage/OBS/obscache/
+          type: DirectoryOrCreate
       imagePullSecrets:
       - name: deepinhub
-  volumeClaimTemplates:
-    - metadata:
-        name: worker-data-ci
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        resources:
-          requests:
-            storage: 160Gi
