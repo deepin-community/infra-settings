@@ -44,6 +44,9 @@ data:
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
       '.*' => 'rw',   # Permit IP of FQDN
+      '^127\..*' => 'rw', # only the localhost can write to the backend
+      "^10.20.64.*" => 'rw',   # Permit IP of FQDN
+      "^$ip\$" => 'rw',   # Permit IP of FQDN
       "^10.42.*" => 'rw',
       "^172.25.3.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
@@ -59,13 +62,13 @@ data:
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
     our $srcserver = "http://172.25.3.1:5352";
-    our $reposerver = "http://backend-larv:5252";
+    our $reposerver = "http://10.20.64.41:31252";
     our $serviceserver = "http://172.25.3.1:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://backend-larv:5352";
-    our $workerreposerver = "http://backend-larv:5252";
+    our $workersrcserver = "http://10.20.64.41:31352";
+    our $workerreposerver = "http://10.20.64.41:31252";
 
     #our $servicedir = "/usr/lib/obs/service/";
     #our $servicetempdir = "/srv/obs/service";
@@ -367,7 +370,7 @@ data:
     #
     # An empty setting will point to localhost:5352 by default
     #
-    OBS_SRC_SERVER=""
+    OBS_SRC_SERVER="10.20.64.41:31353"
 
     ## Path:        Applications/OBS
     ## Description: define repository server host to be used
@@ -377,7 +380,7 @@ data:
     #
     # An empty setting will point to localhost:5252 by default
     #
-    OBS_REPO_SERVERS=""
+    OBS_REPO_SERVERS="10.20.64.41:31253"
 
     ## Path:        Applications/OBS
     ## Description: define number of build instances
@@ -856,7 +859,9 @@ spec:
       labels:
         app: obs-larv
     spec:
+      #Only one node used to run loongarch and riscv backend
       nodeSelector:
+        larv: 'yes'
         nettype: optical-fiber
       containers:
       - name: backend-larv
@@ -864,7 +869,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: backend-larv
-          containerPort: 5252
+          containerPort: 31252
         - name: src
           containerPort: 5352
         volumeMounts:
@@ -943,16 +948,20 @@ spec:
   ports:
   - name: backend-larv
     protocol: TCP
-    port: 5252
-    targetPort: 5252
+    port: 31252
+    targetPort: 31252
+    nodePort: 31252
   - name: src
     protocol: TCP
     port: 5352
     targetPort: 5352
-  type: ClusterIP
+    nodePort: 31352
+  # Use Node port to export backend ports
+  type: NodePort
 
 ---
 # Obs Backend Ingress
+  # Todo: Need to fix client real ip is incorrect:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -968,7 +977,7 @@ spec:
     service:
       name: backend-larv
       port:
-        number: 5252
+        number: 31252
   rules:
   - host: obs-backend-larv.deepin.org
     http:
@@ -979,7 +988,7 @@ spec:
           service:
             name: backend-larv
             port:
-              number: 5252
+              number: 31252
   - host: obs-src-larv.deepin.org
     http:
       paths:
