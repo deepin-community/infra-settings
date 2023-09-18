@@ -29,6 +29,7 @@ ENV container docker
 #ADD api/config/apache2 /etc/sysconfig/apache2
 #ADD api/config/options.yml /srv/www/obs/api/config/options.yml
 #ADD api/config/database.yml /srv/www/obs/api/config/database.yml
+RUN zypper -n install sudo; zypper clean;
 ADD api/patches/0001-feat-add-topic.patch /patches/0001-feat-add-topic.patch
 ADD api/patches/0002-feat-workflow-build-job-add-pending-status-support.patch /patches/0002-feat-workflow-build-job-add-pending-status-support.patch
 
