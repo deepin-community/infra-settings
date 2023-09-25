@@ -38,8 +38,8 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 172.25.3.12; # FQDN of the WebUI/API server if it's not $hostname
-    my $src = 172.25.3.1;
+    my $frontend = 172.25.6.13; # FQDN of the WebUI/API server if it's not $hostname
+    my $src = 172.25.6.1;
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
@@ -48,7 +48,7 @@ data:
       "^10.20.64.*" => 'rw',   # Permit IP of FQDN
       "^$ip\$" => 'rw',   # Permit IP of FQDN
       "^10.42.*" => 'rw',
-      "^172.25.3.*" => 'rw',
+      "^172.25.6.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
     };
 
@@ -56,14 +56,14 @@ data:
     if ($frontend) {
       my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
       $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
-      my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
-      $ipaccess->{$srcip} = 'rw' ;
+      # my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
+      # $ipaccess->{$srcip} = 'rw' ;
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://172.25.3.1:5352";
+    our $srcserver = "http://172.25.6.1:30352";
     our $reposerver = "http://10.20.64.41:31252";
-    our $serviceserver = "http://172.25.3.1:5152";
+    our $serviceserver = "http://172.25.6.1:30152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
@@ -871,7 +871,7 @@ spec:
         - name: backend-larv
           containerPort: 31252
         - name: src
-          containerPort: 5352
+          containerPort: 30352
         volumeMounts:
         - name: backend-config-larv
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -894,11 +894,11 @@ spec:
               - NET_ADMIN
         env:
         - name: SRCPORT
-          value: "5352"
+          value: "30352"
         - name: SRCIP
-          value: "172.25.3.1"
+          value: "172.25.6.1"
         - name: BACKENDIP
-          value: "172.25.3.13"
+          value: "172.25.6.13"
       volumes:
       - name: backend-config-larv
         configMap:
@@ -953,8 +953,8 @@ spec:
     nodePort: 31252
   - name: src
     protocol: TCP
-    port: 5352
-    targetPort: 5352
+    port: 30352
+    targetPort: 30352
     nodePort: 31352
   # Use Node port to export backend ports
   type: NodePort
@@ -998,4 +998,4 @@ spec:
           service:
             name: backend-larv
             port:
-              number: 5352
+              number: 30352

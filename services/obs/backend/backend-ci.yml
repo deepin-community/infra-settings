@@ -38,14 +38,14 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 172.25.3.12; # FQDN of the WebUI/API server if it's not $hostname
-    my $src = 172.25.3.1;
+    my $frontend = 172.25.6.12; # FQDN of the WebUI/API server if it's not $hostname
+    my $src = 172.25.6.1;
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
       '.*' => 'rw',   # Permit IP of FQDN
       "^10.42.*" => 'rw',
-      "^172.25.3.*" => 'rw',
+      "^172.25.6.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
     };
 
@@ -58,13 +58,13 @@ data:
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://172.25.3.1:5352";
+    our $srcserver = "http://172.25.6.1:30352";
     our $reposerver = "http://backend-ci:5252";
-    our $serviceserver = "http://172.25.3.1:5152";
+    our $serviceserver = "http://172.25.6.1:30152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://backend-ci:5352";
+    our $workersrcserver = "http://backend-ci:30352";
     our $workerreposerver = "http://backend-ci:5252";
 
     #our $servicedir = "/usr/lib/obs/service/";
@@ -824,13 +824,13 @@ data:
   wg0.conf: |
     [Interface]
     PrivateKey =
-    Address = 172.25.3.12/24
+    Address = 172.25.6.12/24
     ListenPort = 51820
 
     [Peer]
     PublicKey =
     Endpoint =
-    AllowedIPs = 172.25.3.0/24
+    AllowedIPs = 172.25.6.0/24
     PersistentKeepalive = 25
 
 ---
@@ -860,7 +860,7 @@ spec:
         - name: backend-ci
           containerPort: 5252
         - name: src
-          containerPort: 5352
+          containerPort: 30352
         volumeMounts:
         - name: backend-config-ci
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -883,11 +883,11 @@ spec:
               - NET_ADMIN
         env:
         - name: SRCPORT
-          value: "5352"
+          value: "30352"
         - name: SRCIP
-          value: "172.25.3.1"
+          value: "172.25.6.1"
         - name: BACKENDIP
-          value: "172.25.3.12"
+          value: "172.25.6.12"
       volumes:
       - name: backend-config-ci
         configMap:
@@ -937,6 +937,6 @@ spec:
     targetPort: 5252
   - name: src
     protocol: TCP
-    port: 5352
-    targetPort: 5352
+    port: 30352
+    targetPort: 30352
   type: ClusterIP
