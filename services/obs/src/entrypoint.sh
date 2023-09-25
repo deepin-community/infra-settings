@@ -1,4 +1,6 @@
 #!/bin/bash
+set -x
+
 cp /srv/obs/_configuration.xml /srv/obs/configuration.xml
 /usr/lib/obs/server/bs_redis --logfile log/redis.log &
 /usr/lib/obs/server/bs_deltastore --logfile deltastore.log &
@@ -6,3 +8,6 @@ cp /srv/obs/_configuration.xml /srv/obs/configuration.xml
 /usr/lib/obs/server/bs_servicedispatch --logfile log/servicedispatch.log &
 /usr/lib/obs/server/bs_srcserver --logfile log/src_server.log &
 /usr/lib/obs/server/bs_sourcepublish --logfile log/sourcepublish.log
+
+# For debug
+while true;do sleep 6;done

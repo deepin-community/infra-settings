@@ -1,5 +1,5 @@
 # https://github.com/openSUSE/docker-containers/blob/master/derived_images/systemd/Dockerfile
-FROM opensuse/leap:15.4
+FROM opensuse/leap:15.5
 
 ENV container docker
 
@@ -9,10 +9,10 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/oss/' mirror-update; \
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/non-oss/' mirror-update-non-oss;
 
-RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.4/OBS:Server:Unstable.repo; \
-  zypper ar -f -G https://download.opensuse.org/repositories/openSUSE:/Tools/15.4/openSUSE:Tools.repo; \
-  zypper -n install git-buildpackage patch fakeroot obs-service-gbp obs-service-set_version obs-server vim xz \
-  obs-service-cargo_vendor cargo sudo; zypper clean;
+RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.5/OBS:Server:Unstable.repo; \
+  zypper ar -f -G https://download.opensuse.org/repositories/openSUSE:/Tools/15.5/openSUSE:Tools.repo; \
+  https_proxy=http://10.20.52.80:7890 zypper -n install git-buildpackage patch fakeroot obs-service-gbp obs-service-set_version obs-server vim xz \
+  obs-service-cargo_vendor cargo sudo go1.18 python3-libarchive-c gzip; zypper clean;
 
 # setup obs-src configuration
 RUN mkdir -p /srv/backup/; \
@@ -26,10 +26,13 @@ ADD config/obs-server /etc/sysconfig/obs-server
 ADD config/configuration.xml /srv/obs/configuration.xml
 COPY src/patches /patches
 COPY src/service /usr/lib/obs/service
+COPY src/server /
 
 # apply some patches
 RUN patch -p2 -d /usr/lib/obs/service/TarSCM/ < /patches/0001-obs-tar-scm.patch
-RUN patch -p3 -d /usr/lib/obs/server < /patches/0002-feat-Add-linglong-build-support.patch
+RUN patch -p2 -d /usr/lib/obs/service/TarSCM/ < /patches/0003-chore-remove-dpkg-parsechangelog-warning.patch
+# RUN patch -p3 -d /usr/lib/obs/server < /patches/0002-feat-Add-linglong-build-support.patch
+RUN tar xf /obs-server.tar -C /usr/lib/obs/; rm /obs-server.tar
 
 WORKDIR /srv/obs/
 
