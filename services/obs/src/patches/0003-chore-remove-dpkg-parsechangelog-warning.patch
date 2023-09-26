@@ -1,0 +1,23 @@
+From 193032f994930ae2cb6e4b18f0cbf00be59aec5f Mon Sep 17 00:00:00 2001
+From: tsic404 <liuheng@deepin.org>
+Date: Mon, 25 Sep 2023 13:43:17 +0800
+Subject: [PATCH] chore: remove dpkg-parsechangelog warning
+
+log: as title
+---
+ TarSCM/scm/git.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/TarSCM/scm/git.py b/TarSCM/scm/git.py
+index 345a2ae7..044a5f71 100644
+--- a/TarSCM/scm/git.py
++++ b/TarSCM/scm/git.py
+@@ -370,7 +370,7 @@ def _read_changelog_verson(self, parent_tag, versionformat):
+             msg = "\033[31m@CHANGELOG@ can not be expanded: {}\033[0m"
+             msg = msg.format(out)
+             sys.exit(msg)
+-        version = out.strip()
++        version = out.strip().split('\n')[-1]
+         versionformat = re.sub('@CHANGELOG@', version,
+                                 versionformat)
+         return versionformat
