@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: obs-test
+
+---
+# Obs test src storage
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: src-data
+  namespace: obs-test
+  labels:
+    app: src-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obstest"
+  resources:
+    requests:
+      storage: 1024Gi
+
+---
+# Obs test backend storage
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: backend-data
+  namespace: obs-test
+  labels:
+    app: backend-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obstest"
+  resources:
+    requests:
+      storage: 1024Gi
+
+---
+# Obs test mysql storage
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: db-data
+  namespace: obs-test
+  labels:
+    app: db-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obstest"
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+# Obs test mysql config storage
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: db-config-data
+  namespace: obs-test
+  labels:
+    app: db-config-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obstest"
+  resources:
+    requests:
+      storage: 50M
