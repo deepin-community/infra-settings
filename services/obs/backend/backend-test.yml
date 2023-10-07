@@ -823,20 +823,20 @@ metadata:
 data:
   wg0.conf: |
     [Interface]
-    PrivateKey = YOYTM3ujqIaSZEfupMAfBzEDIN1DWgKuT06BCZFdE20=
-    Address = 172.25.6.13/24
-    ListenPort = 51820
+    PrivateKey =
+    Address =
+    ListenPort =
 
     [Peer]
-    PublicKey = OS+5p5oWQVv+enLGn6a+FnUXmnmF8n8WGihdPVN/PCU=
-    Endpoint = 10.20.64.72:51820
-    AllowedIPs = 172.25.6.2/32
+    PublicKey =
+    Endpoint =
+    AllowedIPs =
     PersistentKeepalive = 25
 
     [Peer]
-    PublicKey = kR1C/EbSPm4/cJFQ4CQZWvqeUDfYE/vjhOkWpnMx620=
-    Endpoint = 220.202.18.3:51820
-    AllowedIPs = 172.25.6.1/32
+    PublicKey =
+    Endpoint =
+    AllowedIPs =
     PersistentKeepalive = 25
 
 ---
@@ -859,14 +859,23 @@ spec:
       nodeSelector:
         nettype: optical-fiber
       containers:
+      - name: nginx-src
+        image: nginx:latest
+        ports:
+        - name: src
+          containerPort: 30352
+        volumeMounts:
+        - name: nginx-obssrc
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: obssrc.conf
+        - name: src-cache
+          mountPath: /cache
       - name: backend-test
         image: hub.deepin.com/k3s/obs/backend:test
         imagePullPolicy: Always
         ports:
         - name: backend-test
           containerPort: 5252
-        - name: src
-          containerPort: 30352
         volumeMounts:
         - name: backend-config-test
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -887,13 +896,6 @@ spec:
           capabilities:
             add:
               - NET_ADMIN
-        env:
-        - name: SRCPORT
-          value: "30352"
-        - name: SRCIP
-          value: "172.25.6.1"
-        - name: BACKENDIP
-          value: "172.25.6.13"
       volumes:
       - name: backend-config-test
         configMap:
@@ -922,6 +924,15 @@ spec:
           items:
           - key: wg0.conf
             path: wg0.conf
+      - name: nginx-obssrc
+        configMap:
+          name: nginx-obssrc
+          items:
+          - key: obssrc.conf
+            path: obssrc.conf
+      - name: src-cache
+        persistentVolumeClaim:
+          claimName: src-cache
       hostname: backend-test
       imagePullSecrets:
       - name: deepinhub
