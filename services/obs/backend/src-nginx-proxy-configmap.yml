@@ -1,0 +1,25 @@
+---
+# Obs Src Port Nginx Proxy ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: obs
+  name: nginx-obssrc
+data:
+  obssrc.conf: |
+    proxy_cache_path /cache levels=1:2 keys_zone=obssrc:10m inactive=365d max_size=300g;
+
+    server {
+        listen       30352;
+        location / {
+              proxy_ignore_headers Cache-Control;
+              proxy_cache obssrc;
+              proxy_buffering on;
+              proxy_cache_valid any 30m;
+              proxy_cache_lock on;
+              proxy_cache_background_update on;
+              proxy_cache_use_stale error timeout updating http_503;
+              proxy_pass http://172.25.6.1:30352;
+        }
+        add_header X-Cache-Status1 $upstream_cache_status;
+    }

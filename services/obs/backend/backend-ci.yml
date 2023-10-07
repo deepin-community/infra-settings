@@ -853,14 +853,23 @@ spec:
       nodeSelector:
         nettype: optical-fiber
       containers:
+      - name: nginx-src
+        image: nginx:latest
+        ports:
+        - name: src
+          containerPort: 30352
+        volumeMounts:
+        - name: nginx-obssrc
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: obssrc.conf
+        - name: src-cache
+          mountPath: /cache
       - name: backend-ci
-        image: hub.deepin.com/k3s/obs/backend:test
+        image: hub.deepin.com/k3s/obs/backend:latest
         imagePullPolicy: Always
         ports:
         - name: backend-ci
           containerPort: 5252
-        - name: src
-          containerPort: 30352
         volumeMounts:
         - name: backend-config-ci
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -881,13 +890,6 @@ spec:
           capabilities:
             add:
               - NET_ADMIN
-        env:
-        - name: SRCPORT
-          value: "30352"
-        - name: SRCIP
-          value: "172.25.6.1"
-        - name: BACKENDIP
-          value: "172.25.6.12"
       volumes:
       - name: backend-config-ci
         configMap:
@@ -916,6 +918,15 @@ spec:
           items:
           - key: wg0.conf
             path: wg0.conf
+      - name: nginx-obssrc
+        configMap:
+          name: nginx-obssrc
+          items:
+          - key: obssrc.conf
+            path: obssrc.conf
+      - name: src-cache
+        persistentVolumeClaim:
+          claimName: src-cache
       hostname: backend-ci
       imagePullSecrets:
       - name: deepinhub

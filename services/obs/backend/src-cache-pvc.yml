@@ -1,0 +1,16 @@
+---
+# Obs src cache
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: src-cache
+  namespace: obs
+  labels:
+    app: src-cache
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obsbackend"
+  resources:
+    requests:
+      storage: 300Gi
