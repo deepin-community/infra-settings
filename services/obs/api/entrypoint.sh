@@ -10,8 +10,17 @@ chmod 777 -R /srv/www/obs/api/log
 # sleep 20
 
 apache2ctl -D FOREGROUND &
-#sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec /srv/www/obs/api/script/delayed_job.api.rb --queue=default start -i 1030 &
-#sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=scm start -i 1070 &
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=default start -i 1030
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=quick start -i 0
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=quick start -i 1
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=quick start -i 2
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=scm start -i 1070
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=project_log_rotate start -i 1040
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=staging start -i 1060
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=consistency_check start -i 1050
+RAILS_ENV=production sudo -E -u wwwrun /usr/bin/bundle.ruby3.1 exec script/delayed_job.api.rb --queue=releasetracking start -i 1000
+RAILS_ENV=production sudo -E -u wwwrun /srv/www/obs/api/bin/clockworkd --log-dir=log -l -c config/clock.rb start
+
 RAILS_ENV=production /srv/www/obs/api/bin/rails sphinx:start &
 
 # for github proxy
