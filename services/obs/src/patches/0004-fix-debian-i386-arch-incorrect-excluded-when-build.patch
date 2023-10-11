@@ -1,0 +1,23 @@
+From a11c1b23c0ce90b5b70c389ba8697a195e51f8e3 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Wed, 11 Oct 2023 07:49:23 +0000
+Subject: [PATCH] fix: debian i386 arch incorrect  excluded when build
+
+---
+ Build/Deb.pm | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Build/Deb.pm b/Build/Deb.pm
+index 45c93f0..ea2602b 100644
+--- a/Build/Deb.pm
++++ b/Build/Deb.pm
+@@ -35,6 +35,7 @@ eval {
+ };
+ 
+ my %obs2debian = (
++  "i386"    => "i386",
+   "i486"    => "i386",
+   "i586"    => "i386",
+   "i686"    => "i386",
+-- 
+2.35.3
