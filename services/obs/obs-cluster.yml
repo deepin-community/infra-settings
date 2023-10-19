@@ -1809,6 +1809,11 @@ spec:
         - name: deepinhub
       nodeSelector:
         obs-type: src
+      tolerations:
+      - key: "node.kubernetes.io/unschedulable"
+        operator: "Equal"
+        value: ""
+        effect: "NoSchedule"
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
@@ -1919,6 +1924,11 @@ spec:
         - name: deepinhub
       nodeSelector:
         obs-type: src
+      tolerations:
+      - key: "node.kubernetes.io/unschedulable"
+        operator: "Equal"
+        value: ""
+        effect: "NoSchedule"
       restartPolicy: Always
       schedulerName: default-scheduler
       terminationGracePeriodSeconds: 30
