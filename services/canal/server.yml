@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server
+  namespace: canal
+data:
+  admin_manager: "admin:8089"
+  admin_port: "11110"
+  admin_user: "admin"
+  admin_password: ""
+  # admin_register_cluster: "local"
+  admin_register_auto: "true"
+  admin_register_name: "server"
+  canal.serverMode: "rabbitMQ"
+
+---
+
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: server
+  namespace: canal
+  labels:
+    app.kubernetes.io/name: server
+    app: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: server
+      app: server
+  template:
+    metadata:
+      name: server
+      labels:
+        app.kubernetes.io/name: server
+        app: server
+    spec:
+      imagePullSecrets:
+      - name: secret
+      containers:
+        - name: server
+          image: 'canal/canal-server:v1.1.7'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: tcp
+              containerPort: 11111
+              protocol: TCP
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: 'metadata.labels[''app'']'
+            - name: STS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: canal.register.ip
+              value: $(POD_NAME).$(SERVICE_NAME).$(STS_NAMESPACE)
+            - name: canal.admin.manager
+              valueFrom:
+                configMapKeyRef:
+                  name: server
+                  key: admin_manager
+            - name: canal.admin.port
+              valueFrom:
+                configMapKeyRef:
+                  name: server
+                  key: admin_port
+            - name: canal.admin.user
+              valueFrom:
+                configMapKeyRef:
+                  name: server
+                  key: admin_user
+            - name: canal.admin.passwd
+              valueFrom:
+                configMapKeyRef:
+                  name: server
+                  key: admin_password
+            # - name: canal.admin.register.cluster
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: server
+            #       key: admin_register_cluster
+            - name: canal.admin.register.auto
+              valueFrom:
+                configMapKeyRef:
+                  name: server
+                  key: admin_register_auto
+            - name: canal.admin.register.name
+              valueFrom:
+                configMapKeyRef:
+                  name: server
+                  key: admin_register_name
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          livenessProbe:
+            tcpSocket:
+              port: 11112
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 11112
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 30
+      restartPolicy: Always
+      #affinity:
+      #  podAntiAffinity:
+      #    preferredDuringSchedulingIgnoredDuringExecution:
+      #      - weight: 1
+      #        podAffinityTerm:
+      #          labelSelector:
+      #            matchLabels:
+      #              app.kubernetes.io/name: server
+      #          namespaces:
+      #            - canal
+      #          topologyKey: kubernetes.io/hostname
+  serviceName: server
+  revisionHistoryLimit: 10
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: server
+  namespace: canal
+spec:
+  ports:
+    - protocol: TCP
+      port: 11110
+      targetPort: 11110
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: server
+    app: server

@@ -1,0 +1,88 @@
+---
+# configmap
+# kubectl create configmap game-config --from-file=docs/user-guide/configmap/kubectl
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: canal
+  name: admin-cm
+data:
+  # replace your filename of properties configration and contents here.
+  # canal-admin服务端口
+  server.port: "8089"
+  # canal-server注册到canal-admin时用的用户
+  canal.adminUser: "admin"
+  # canal-server注册到canal-admin时用的密码,注意这不是canal-admin 管理 web 的登录密码
+  canal.adminPasswd: "123456"
+  # 存放canal-admin数据的外部数据库配置
+  spring.datasource.address: "mysql:3306"
+  spring.datasource.database: "canal_manager"
+  spring.datasource.username: "root"
+  spring.datasource.password: "canal"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: canal
+  name: admin
+  labels:
+    app: admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin
+  template:
+    metadata:
+      labels:
+        app: admin
+    spec:
+      restartPolicy: "Always"
+      containers:
+      - name: admin
+        image: canal/canal-admin:v1.1.7
+        imagePullPolicy: "IfNotPresent"
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "3Gi"
+          requests:
+            cpu: "50m"
+            memory: "2Gi"
+        ports:
+        - containerPort: 8089
+          name: http
+          protocol: TCP
+        envFrom:
+          - configMapRef:
+              name: admin-cm
+        readinessProbe:
+          failureThreshold: 3
+          periodSeconds: 5
+          initialDelaySeconds: 10
+          successThreshold: 1
+          httpGet:
+            port: 8089
+            path: /
+        livenessProbe:
+          httpGet:
+            port: 8089
+            path: /
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: canal
+  name: admin
+spec:
+  selector:
+    app: admin
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8089
+      targetPort: 8089 
