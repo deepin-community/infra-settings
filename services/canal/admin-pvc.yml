@@ -1,0 +1,33 @@
+# canal admin database pvc
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: canal-admin-db
+  namespace: canal
+  labels:
+    app: canal-admin-db
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "canal"
+  resources:
+    requests:
+      storage: 20Gi
+
+# canal admin database config pvc
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: canal-admin-db-conf
+  namespace: canal
+  labels:
+    app: canal-admin-db-conf
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "canal"
+  resources:
+    requests:
+      storage: 10M
