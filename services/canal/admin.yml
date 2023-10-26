@@ -13,7 +13,7 @@ data:
   # canal-server注册到canal-admin时用的用户
   canal.adminUser: "admin"
   # canal-server注册到canal-admin时用的密码,注意这不是canal-admin 管理 web 的登录密码
-  canal.adminPasswd: "123456"
+  canal.adminPasswd: ""
   # 存放canal-admin数据的外部数据库配置
   spring.datasource.address: "mysql:3306"
   spring.datasource.database: "canal_manager"
@@ -85,4 +85,32 @@ spec:
     - name: http
       protocol: TCP
       port: 8089
-      targetPort: 8089 
+      targetPort: 8089
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: web
+    k8s.kuboard.cn/name: canal-admin
+  name: admin
+  namespace: canal
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: canal-admin.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: admin
+                port:
+                  number: 8089
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - canal-admin.cicd.getdeepin.org
+      secretName: cicd.getdeepin.org
