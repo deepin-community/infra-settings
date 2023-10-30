@@ -41,7 +41,7 @@ spec:
       restartPolicy: "Always"
       containers:
       - name: admin
-        image: canal/canal-admin:v1.1.7
+        image: hub.cicd.getdeepin.org/canal/canal-admin:v1.1.7
         imagePullPolicy: "IfNotPresent"
         resources:
           limits:
