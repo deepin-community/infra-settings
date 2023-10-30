@@ -40,7 +40,7 @@ spec:
       - name: secret
       containers:
         - name: server
-          image: 'canal/canal-server:v1.1.7'
+          image: 'hub.cicd.getdeepin.org/canal/canal-server:v1.1.7'
           imagePullPolicy: IfNotPresent
           ports:
             - name: tcp
