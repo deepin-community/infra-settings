@@ -154,7 +154,7 @@ data:
     # A label can be used to build specific packages only on dedicated hosts.
     # For example for benchmarking.
     #
-    OBS_WORKER_HOSTLABELS=""
+    # OBS_WORKER_HOSTLABELS=""
 
     ## Path:        Applications/OBS
     ## Description: can be used to define a security level of the worker
@@ -635,7 +635,7 @@ data:
     #OBS_VM_KERNEL="/srv/obs/worker/vmlinuz-5.3.18-57-default"
     #OBS_VM_INITRD="/srv/obs/worker/initrd-5.3.18-57-default"
 
-    #OBS_WORKER_HOSTLABELS="deepinci-amd1"
+    OBS_WORKER_HOSTLABELS="$NODENAME"
     #OBS_VM_USE_TMPFS="yes"
     #OBS_WORKER_TEST_MODE="yes"
 
@@ -662,6 +662,11 @@ spec:
       - name: k3s-worker-ci-amd
         image: hub.deepin.com/k3s/obs/worker:latest
         imagePullPolicy: Always
+        env:
+        - name: NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         volumeMounts:
         - name: server-config-ci
           mountPath: /etc/sysconfig/obs-server
@@ -723,6 +728,11 @@ spec:
       - name: k3s-worker-ci-arm
         image: hub.deepin.com/k3s/obs/worker:arm64-latest
         imagePullPolicy: Always
+        env:
+        - name: NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         volumeMounts:
         - name: server-config-ci
           mountPath: /etc/sysconfig/obs-server
