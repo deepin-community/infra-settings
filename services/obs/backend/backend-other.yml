@@ -808,6 +808,8 @@ data:
       <schedulers>
         <arch>aarch64</arch>
         <arch>x86_64</arch>
+        <arch>loong64</arch>
+        <arch>riscv64</arch>
       </schedulers>
       <unlisted_projects_filter>^home:.+</unlisted_projects_filter>
       <unlisted_projects_filter_description>home projects</unlisted_projects_filter_description>
