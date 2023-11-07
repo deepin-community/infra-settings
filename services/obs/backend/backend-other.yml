@@ -44,6 +44,10 @@ data:
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
       '.*' => 'rw',   # Permit IP of FQDN
+      '^127\..*' => 'rw', # only the localhost can write to the backend
+      "^10.20.64.*" => 'rw',   # Permit IP of FQDN
+      "^$ip\$" => 'rw',   # Permit IP of FQDN
+      "^100.64.0.*" => 'rw',
       "^10.42.*" => 'rw',
       "^172.25.6.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
@@ -53,8 +57,8 @@ data:
     if ($frontend) {
       my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
       $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
-      my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
-      $ipaccess->{$srcip} = 'rw' ;
+      # my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
+      # $ipaccess->{$srcip} = 'rw' ;
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
@@ -949,6 +953,7 @@ metadata:
 spec:
   selector:
     app: obs-other
+  externalTrafficPolicy: Local
   ports:
   - name: backend-other
     protocol: TCP
