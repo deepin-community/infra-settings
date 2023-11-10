@@ -57,6 +57,9 @@ spec:
         envFrom:
           - configMapRef:
               name: admin-cm
+        env:
+          - name: SERVER_PORT
+            value: "8089"
         readinessProbe:
           failureThreshold: 3
           periodSeconds: 5
