@@ -1,0 +1,25 @@
+From fb359358995ba9c3d5a8e0f08f072619b304b0aa Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Tue, 14 Nov 2023 12:10:58 +0000
+Subject: [PATCH] obs: backend service dispatcher add muti worker hostlabel
+ support
+
+---
+ Constraints.pm | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Constraints.pm b/Constraints.pm
+index a17c9ae..402ea2f 100644
+--- a/Constraints.pm
++++ b/Constraints.pm
+@@ -82,6 +82,8 @@ sub oracle {
+     if ($l->{'exclude'} && $l->{'exclude'} eq 'true') {
+       return 0 if grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
+     } else {
++      # 在constraints的多个hostlabel中有一个匹配到worker的hostlabel,该worker就符号调度条件（且边或）
++      return 1 if grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
+       return 0 unless grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
+     }
+   }
+--
+2.35.3
