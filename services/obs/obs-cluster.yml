@@ -1901,7 +1901,7 @@ spec:
         app: api
     spec:
       containers:
-        - image: 'hub.deepin.com/k3s/obs/apiv3:test'
+        - image: 'hub.deepin.com/k3s/obs/api:latest'
           imagePullPolicy: Always
           name: api
           ports:

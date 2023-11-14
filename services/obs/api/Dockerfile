@@ -32,10 +32,12 @@ ENV container docker
 RUN zypper -n install sudo;zypper clean;
 #ADD api/patches/0001-feat-add-topic.patch /patches/0001-feat-add-topic.patch
 #ADD api/patches/0002-feat-workflow-build-job-add-pending-status-support.patch /patches/0002-feat-workflow-build-job-add-pending-status-support.patch
+ADD api/patches/0003-fix-obs-api-failed-recognize-loong64-arch.patch /patches/0003-fix-obs-api-failed-recognize-loong64-arch.patch
 
 #use some patches
 #RUN patch -p0 /srv/www/obs/api/app/models/workflow/step.rb /patches/0001-feat-add-topic.patch
 #RUN patch -p3 -d /srv/www/obs/api/ < /patches/0002-feat-workflow-build-job-add-pending-status-support.patch
+RUN patch -p1 -d /srv/www/obs/ < /patches/0003-fix-obs-api-failed-recognize-loong64-arch.patch
 
 WORKDIR /srv/www/obs/api
 
