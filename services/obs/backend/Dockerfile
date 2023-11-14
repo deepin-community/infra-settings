@@ -34,6 +34,7 @@ RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0003-feat-Add-linglong-bu
 RUN patch -p1 -d /usr/lib/perl5/vendor_perl/5.26.1/Dpkg/ < /patches/0004-Add-sha512-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0005-feat-Add-i386-build-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0006-feat-Add-loong64-support.patch
+RUN patch -p1 -d /usr/lib/obs/server/BSDispatcher/ < /patches/0007-obs-backend-service-dispatcher-add-muti-worker-hostlabel-support.patch
 
 WORKDIR /srv/obs/
 
