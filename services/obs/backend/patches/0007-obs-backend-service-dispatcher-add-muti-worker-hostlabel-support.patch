@@ -5,21 +5,34 @@ Subject: [PATCH] obs: backend service dispatcher add muti worker hostlabel
  support
 
 ---
- Constraints.pm | 2 ++
- 1 file changed, 2 insertions(+)
+ Constraints.pm | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/Constraints.pm b/Constraints.pm
-index a17c9ae..402ea2f 100644
+index d4c44d4..83335a4 100644
 --- a/Constraints.pm
 +++ b/Constraints.pm
-@@ -82,6 +82,8 @@ sub oracle {
+@@ -76,13 +76,20 @@ sub getmbsize {
+
+ sub oracle {
+   my ($worker, $constraints) = @_;
++  my @has_hostlabel = 0;
+   for my $l (@{$constraints->{'hostlabel'} || []}) {
      if ($l->{'exclude'} && $l->{'exclude'} eq 'true') {
        return 0 if grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
      } else {
-+      # 在constraints的多个hostlabel中有一个匹配到worker的hostlabel,该worker就符号调度条件（且边或）
-+      return 1 if grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
-       return 0 unless grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
+-      return 0 unless grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
++      # 在constraints的多个hostlabel中有一个匹配到worker的hostlabel,该worker就符号调度条件（且变或）
++      #return 0 unless grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []};
++      if (grep {$_ eq $l->{'_content'}} @{$worker->{'hostlabel'} || []}) {
++          @has_hostlabel = 1;
++          last;
++      }
      }
    }
++  return 0 unless @has_hostlabel;
+   for my $s (@{$constraints->{'sandbox'} || []}) {
+     if ($s->{'exclude'} && $s->{'exclude'} eq 'true') {
+       return 0 if $s->{'_content'} eq ($worker->{'sandbox'} || '');
 --
 2.35.3
