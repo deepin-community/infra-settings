@@ -129,7 +129,7 @@ if [ "$PULL_HEAD_REF" = "topic-*" ]; then
 fi
 
 metaconfig=${metaconfig#\"}
-echo ${metaconfig%\"} | sed 's/\\"/"/g' > meta.xml
+echo -e ${metaconfig%\"} | sed 's/\\"/"/g' > meta.xml
 result=$(curl -u $OSCUSER:$OSCPASS "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/_meta"|grep "unknown_project")
 if [ "$result" != "" ];then
     echo "Creating Obs CI project..."
@@ -146,7 +146,7 @@ result=$(curl -u $OSCUSER:$OSCPASS "https://build.deepin.com/source/deepin:CI:$P
 if [ "$result" != "" ];then
     echo "Creating Obs CI package..."
     packageconfig=${packageconfig#\"}
-    echo ${packageconfig%\"} | sed 's/\\"/"/g' > meta1.xml
+    echo -e ${packageconfig%\"} | sed 's/\\"/"/g' > meta1.xml
     sed -i "s#PKGNAME#${REPO_NAME}#g" meta1.xml
     sed -i "s#PROJECT_NAME#${PROJECT_NAME}#g" meta1.xml
     curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @meta1.xml "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_meta"
@@ -163,13 +163,13 @@ if [ "$oldsha" != "$PULL_PULL_SHA" ]; then
     if [ "$result" != "" ]; then
         echo "Uploading _service..."
         serviceconfig=${serviceconfig#\"}
-        echo ${serviceconfig%\"} | sed 's/\\"/"/g' > _service
+        echo -e ${serviceconfig%\"} | sed 's/\\"/"/g' > _service
         sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _service
         curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @_service -s "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"
     fi
     echo "Uploading _branch_request..."
     brconfig=${brconfig#\"}
-    echo ${brconfig%\"} | sed 's/\\"/"/g' > _branch_request
+    echo -e ${brconfig%\"} | sed 's/\\"/"/g' > _branch_request
     sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _branch_request
     sed -i "s#TAGSHA#${PULL_PULL_SHA}#g" _branch_request
     curl -X PUT -u "$OSCUSER:$OSCPASS" -d @_branch_request -s "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request"
