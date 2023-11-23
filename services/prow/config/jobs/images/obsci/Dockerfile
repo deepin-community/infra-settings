@@ -1,16 +1,14 @@
-FROM debian:latest
+FROM alpine:latest
 
 ENV container docker
 
-# debian repository mirror settings
-RUN cp /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.bak; \
-  sed -i "s/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apt/sources.list.d/debian.sources; \
-  apt update
+# alpine repository mirror settings
+RUN cp /etc/apk/repositories /etc/apk/repositories.bak; \
+  sed -i "s/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g" /etc/apk/repositories; \
+  apk update
 
-RUN apt install -y yq curl; \
-  ln -s /usr/bin/xq-python /usr/bin/xq;
-  #sudo pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple xmltodict; \
-  #sudo pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple yq;
+RUN apk add py3-pip jq curl; \
+  pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple yq;
 
 
 ADD entrypoint.sh /entrypoint.sh
