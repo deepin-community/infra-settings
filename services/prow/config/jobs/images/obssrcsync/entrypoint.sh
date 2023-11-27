@@ -58,8 +58,8 @@ curl -X POST -H "Authorization: Token $OBSTOKEN" "https://build.deepin.com/trigg
 PULL_NUMBER=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/${PULL_BASE_SHA}/pulls |grep "\"number\":" |awk '{print $2}' |awk -F ',' '{print $1}')
 if [ "$PULL_NUMBER" != "" ]; then
     echo "Cleaning obs ci project..."
-    CI_PROJECT_NAME="$REPO_OWNER:$REPO_NAME:Pr-$PULL_NUMBER"
-    if [ "$PULL_HEAD_REF" = "topic-*" ]; then
+    CI_PROJECT_NAME="$REPO_OWNER:$REPO_NAME:PR-$PULL_NUMBER"
+    if [[ "$PULL_HEAD_REF" == "topic-"* ]]; then
         prefix="topic-"
         topic=${PULL_HEAD_REF#$prefix}
         CI_PROJECT_NAME="topics:$topic"
