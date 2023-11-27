@@ -49,8 +49,8 @@ export full_repo_name="$REPO_OWNER/$REPO_NAME"
 
 # 获取配置
 echo "Getting settings..."
-excluded=$(yq -e '.obscijobs' $yaml_file | yq --arg owner $REPO_OWNER  --arg repo $full_repo_name '.[] as $repos | select($repos.repos[] == $owner) | $repos.excluderepos[] | contains($repo)')
-if [ "${excluded}" = "true" ]; then
+excluded=$(yq -e '.obscijobs' $yaml_file | yq --arg owner $REPO_OWNER '.[] as $repos | select($repos.repos[] == $owner) | $repos.excluderepos[]' |grep $full_repo_name)
+if [  -n "${excluded}" ]; then
     echo "$full_repo_name obs ci config excluded, skip and exit"
     exit 0
 fi
@@ -120,8 +120,8 @@ if [ -z "$serviceconfig" ]; then
 fi
 #echo "serviceconfig: $serviceconfig"
 
-PROJECT_NAME="$REPO_OWNER:$REPO_NAME:Pr-$PULL_NUMBER"
-if [ "$PULL_HEAD_REF" = "topic-*" ]; then
+PROJECT_NAME="$REPO_OWNER:$REPO_NAME:PR-$PULL_NUMBER"
+if [[ "$PULL_HEAD_REF" == "topic-"* ]]; then
     prefix="topic-"
     topic=${PULL_HEAD_REF#$prefix}
     echo "Add to topic to $topic"
