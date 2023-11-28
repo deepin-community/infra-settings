@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: canal
+  name: mq-github-reporter
+  labels:
+    app: mq-github-reporter
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mq-github-reporter
+  template:
+    metadata:
+      labels:
+        app: mq-github-reporter
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        nettype: optical-fiber
+      restartPolicy: "Always"
+      containers:
+      - name: mq-github-reporter
+        imagePullPolicy: "Always"
+        image: hub.deepin.com/k3s/obs/githubreporter:latest
+        command:
+        - /githubreporter
+        envFrom:
+          - configMapRef:
+              name: mq-github-reporter-cm
+      hostAliases:
+        - hostnames:
+            - github.com
+          ip: 10.20.64.81
+        - hostnames:
+            - api.github.com
+          ip: 10.20.64.82
+        - hostnames:
+            - github.githubassets.com
+          ip: 10.20.64.83
+        - hostnames:
+            - raw.githubusercontent.com
+          ip: 10.20.64.84
+        - hostnames:
+            - collector.github.com
+          ip: 10.20.64.85
+        - hostnames:
+            - avatars.githubusercontent.com
+          ip: 10.20.64.86
+      imagePullSecrets:
+        - name: deepinhub

@@ -1,0 +1,111 @@
+#!/usr/bin/python3
+import pika
+import json
+import os
+import requests
+from requests.auth import HTTPBasicAuth
+
+# 设置RabbitMQ连接参数
+# rabbitmq_host = 'amqp.cicd.getdeepin.org'
+# rabbitmq_port = 32672
+# rabbitmq_username = 'user'
+# rabbitmq_password = ''
+# rabbitmq_queue = 'obs-ci'
+rabbitmq_host = os.environ.get('rabbitmq_host')
+rabbitmq_port = os.environ.get('rabbitmq_port')
+rabbitmq_username = os.environ.get('rabbitmq_username')
+rabbitmq_password = os.environ.get('rabbitmq_password')
+rabbitmq_queue = os.environ.get('rabbitmq_queue')
+
+# 创建RabbitMQ连接
+credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
+parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, credentials=credentials)
+connection = pika.BlockingConnection(parameters)
+channel = connection.channel()
+
+obs_username = os.environ.get('OSCUSER')
+obs_password = os.environ.get('OSCPASS')
+github_token = os.environ.get('GITHUB_TOKEN')
+
+# 修改这里的参数值，使其与队列的当前设置相匹配
+args = {
+    'durable': True  # 确保这里的值为True或False，与队列的当前设置相匹配
+}
+
+# 声明队列
+channel.queue_declare(queue=rabbitmq_queue, durable=args['durable'], arguments=args)
+
+# 定义回调函数处理消息
+def callback(ch, method, properties, body):
+    event = json.loads(body)
+    if event['table'] == "events" and event['database'] == "api_production":
+        #print("接收到OBS事件: ", event)
+        if len(event['data']) > 0:
+            #print("event_data: ", event['data'])
+            event_data = event['data'][0]
+            event_data_type = event_data['eventtype']
+            event_data_payload = json.loads(event_data['payload'])
+            project = event_data_payload.get('project', '')
+            package = event_data_payload.get('package', '')
+            repository = event_data_payload.get('repository', '')
+            arch = event_data_payload.get('arch', '')
+            # 同步构建状态到github commit
+            if "deepin:CI" in project and "Event::Build" in event_data_type:
+                if "PR-" in project or "topics:" in project:
+                    print(f"Handle {project}/{package} {arch} build event: {event_data_type}")
+                    # https://build.deepin.com/source/deepin:CI:peeweep-test:iptsd:PR-12/iptsd/_branch_request
+                    url = f"https://build.deepin.com/source/{project}/{package}/_branch_request"
+                    response = requests.get(url, auth=HTTPBasicAuth(obs_username, obs_password))
+                    if response.status_code == 200:
+                        content = response.text
+                        brinfo = json.loads(response.text)
+                        # print(brinfo)
+                        pull_request = brinfo.get('pull_request', '')
+                        if pull_request != '':
+                            head = pull_request.get('head', '')
+                            if head != "":
+                                sha = head.get('sha', '')
+                                if sha != '':
+                                    repo = head.get('repo', '')
+                                    if repo != '':
+                                        full_name = repo.get('full_name', '')
+                                        print("Syncing build status to github")
+                                        url = f"https://api.github.com/repos/{full_name}/statuses/{sha}"
+                                        headers = {
+                                            "Authorization": f"token {github_token}",
+                                            "Content-Type": "application/vnd.github+json"
+                                        }
+
+                                        status = "success"
+                                        if event_data_type == "Event::BuildFail":
+                                            status = "failure"
+                                        context = f"OBS: {repository}/{arch}"
+                                        target_url = f"https://build.deepin.com/package/live_build_log/{project}/{package}/{repository}/{arch}"
+                                        data = {
+                                            "state": status,
+                                            "context": context,
+                                            "target_url": target_url
+                                        }
+                                        response = requests.post(url, headers=headers, data=json.dumps(data))
+
+                                        if response.status_code == 201:
+                                            print("Commit status uploaded successfully.")
+                                        else:
+                                            print("Failed to upload commit status.")
+                                            print(response.text)
+                                    else:
+                                        print("Failed to get pull_request head's repo")
+                                else:
+                                    print("Failed to get pull_request head's sha")
+                            else:
+                                print("Failed to get pull_request's head")
+                        else:
+                            print("Failed to get pull_request")
+                    else:
+                        print("请求失败，状态码：", response.status_code)
+
+# 开始消费队列中的消息
+channel.basic_consume(queue=rabbitmq_queue, on_message_callback=callback, auto_ack=True)
+
+print('开始监控队列，按Ctrl+C退出')
+channel.start_consuming()
