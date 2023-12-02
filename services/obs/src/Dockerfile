@@ -11,8 +11,8 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
 
 RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.5/OBS:Server:Unstable.repo; \
   zypper ar -f -G https://download.opensuse.org/repositories/openSUSE:/Tools/15.5/openSUSE:Tools.repo; \
-  https_proxy=http://10.20.52.80:7890 zypper -n install git-buildpackage patch fakeroot obs-service-gbp obs-service-set_version obs-server vim xz \
-  obs-service-cargo_vendor cargo sudo go1.18 python3-libarchive-c gzip; zypper clean;
+  zypper -n install git-buildpackage patch fakeroot obs-service-gbp obs-service-set_version obs-server vim xz \
+  obs-service-cargo_vendor cargo sudo go1.18 python3-libarchive-c gzip bzip2; zypper clean;
 
 # setup obs-src configuration
 RUN mkdir -p /srv/backup/; \
