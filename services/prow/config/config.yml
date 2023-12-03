@@ -50,16 +50,22 @@ branch-protection:
   orgs:
     peeweep-test:
       protect: true
-      exclude:
-        - "^revert-" # don't protect revert branches
-        - "^dependabot/" # don't protect branches created by dependabot
-        - "^greenkeeper/" # don't protect branches created by greenkeeper
+      required_status_checks:
+        contexts:
+        - "OBS: deepin_develop/aarch64"
+        - "OBS: deepin_develop/x86_64"
+      include:
+        - "master"
+        - "main"
     deepin-community:
       protect: true
-      exclude:
-        - "^revert-" # don't protect revert branches
-        - "^dependabot/" # don't protect branches created by dependabot
-        - "^greenkeeper/" # don't protect branches created by greenkeeper
+      required_status_checks:
+        contexts:
+        - "OBS: deepin_develop/aarch64"
+        - "OBS: deepin_develop/x86_64"
+      include:
+        - "master"
+        - "main"
 
 tide:
   queries:
@@ -83,6 +89,7 @@ tide:
     - linuxdeepin/dtkgui
     - linuxdeepin/dtkwidget
     - linuxdeepin/dtkdeclarative
+    - linuxdeepin/deepin-unioncode
     labels:
     - approved
     missingLabels:
