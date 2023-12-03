@@ -1,10 +1,10 @@
 periodics:
-- cron: "30 02 * * *"  # Every day at 2:30
+- cron: "30 23 * * *"  # Every day at 23:30
   name: ci-branchprotector
   #cluster: test-infra-trusted
   labels:
     app: branchprotector
-  #decorate: true
+  decorate: false
   #decoration_config:
   #  timeout: 5h
   #extra_refs:
