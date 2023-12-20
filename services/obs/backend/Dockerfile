@@ -12,8 +12,8 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/oss/' mirror-update; \
   zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse/update/leap/$releasever/non-oss/' mirror-update-non-oss;
 
-RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.4/OBS:Server:Unstable.repo; \
-  zypper -n install -t pattern OBS_Server;zypper -n install gzip wireguard-tools iproute2 dpkg iputils vim;zypper clean;
+RUN https_proxy=http://10.20.52.80:7890 zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.4/OBS:Server:Unstable.repo; \
+  https_proxy=http://10.20.52.80:7890 zypper -n install -t pattern OBS_Server;zypper -n install gzip wireguard-tools iproute2 dpkg iputils vim;zypper clean;
 
 # setup obs-backend and obs-sched configuration
 RUN mkdir -p /srv/backup/; \
@@ -35,6 +35,7 @@ RUN patch -p1 -d /usr/lib/perl5/vendor_perl/5.26.1/Dpkg/ < /patches/0004-Add-sha
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0005-feat-Add-i386-build-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0006-feat-Add-loong64-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/BSDispatcher/ < /patches/0007-obs-backend-service-dispatcher-add-muti-worker-hostlabel-support.patch
+RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0008-chore-obs-backend-build-dsc-script-add-eatmydata-support.patch
 
 WORKDIR /srv/obs/
 
