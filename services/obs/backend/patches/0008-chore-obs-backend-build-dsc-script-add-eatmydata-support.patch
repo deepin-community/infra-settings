@@ -27,7 +27,7 @@ index b9b26af..a7fff10 100644
 +        DSC_BUILD_CMD="DEB_BUILD_OPTIONS=nocheck $DSC_BUILD_CMD --no-check-builddeps --build-profiles=nocheck,nodoc"
 +    fi
  
-+    if [ $(command -v eatmydata) ];then DSC_BUILD_CMD="eatmydata $DSC_BUILD_CMD";fi
++    if [ -n "$(command -v eatmydata)" ];then echo Using eatmydata && DSC_BUILD_CMD="eatmydata $DSC_BUILD_CMD";fi
      if grep -Eq '^Format: 3\.0 \(quilt\)$' $BUILD_ROOT$TOPDIR/SOURCES/$RECIPEFILE ; then
          printf "Recipe file '$RECIPEFILE' is being checked for 'DEBTRANSFORM-FILES'... "
          if grep -Eq '^DEBTRANSFORM-FILES:' $BUILD_ROOT$TOPDIR/SOURCES/$RECIPEFILE ; then
