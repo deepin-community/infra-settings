@@ -1,0 +1,23 @@
+From 9295e2f4e953135ac6e5e6e5bceb46e343b47e72 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Mon, 25 Dec 2023 02:27:57 +0000
+Subject: [PATCH] obs: Add deb build cmd print
+
+---
+ build-recipe-dsc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/build-recipe-dsc b/build-recipe-dsc
+index fd33f6d..66324b9 100644
+--- a/build-recipe-dsc
++++ b/build-recipe-dsc
+@@ -192,6 +192,7 @@ dsc_build() {
+     fi
+ 
+     chroot $buildroot su -c "export DEB_BUILD_OPTIONS='${DSC_BUILD_OPTIONS}' ; cd $TOPDIR/BUILD && $DSC_BUILD_CMD" - $BUILD_USER < /dev/null && BUILD_SUCCEEDED=true
++    echo "DSC_BUILD_CMD: $DSC_BUILD_CMD"
+     if test "$BUILD_SUCCEEDED" = true -a "$DO_CHECKS" != "false" && ( chroot $buildroot su -c "which lintian > /dev/null" - $BUILD_USER < /dev/null ); then
+        DEB_CHANGESFILE=${DEB_DSCFILE%.dsc}$OBS_DCH_RELEASE"_"$(chroot $buildroot su -c 'dpkg-architecture -qDEB_BUILD_ARCH')".changes"
+        chroot $buildroot su -c "cd $TOPDIR && echo Running lintian && (set -x && lintian -i $TOPDIR/$DEB_CHANGESFILE)" - $BUILD_USER < /dev/null || BUILD_SUCCEEDED=false
+-- 
+2.35.3
