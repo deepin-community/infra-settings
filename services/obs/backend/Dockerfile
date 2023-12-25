@@ -36,6 +36,7 @@ RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0005-feat-Add-i386-build-suppor
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0006-feat-Add-loong64-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/BSDispatcher/ < /patches/0007-obs-backend-service-dispatcher-add-muti-worker-hostlabel-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0008-chore-obs-backend-build-dsc-script-add-eatmydata-support.patch
+RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0009-obs-Add-deb-build-cmd-print.patch
 
 WORKDIR /srv/obs/
 
