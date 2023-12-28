@@ -20,13 +20,13 @@ index b9b26af..a7fff10 100644
      DSC_BUILD_CMD="$(queryconfig --dist "$BUILD_DIST" --archpath "$BUILD_ARCH" --configdir "$CONFIG_DIR" substitute dsc:build_cmd)"
      test -z "$DSC_BUILD_CMD" && DSC_BUILD_CMD="dpkg-buildpackage -us -uc"
 +    if [ -n "$(command -v eatmydata)" ];then echo "Using eatmydata" && DSC_BUILD_CMD="eatmydata $DSC_BUILD_CMD";fi
-+    if [ "$BUILD_ARCH" = "riscv64" ];then
-+        DSC_BUILD_CMD="$DSC_BUILD_CMD --no-check-builddeps --build-profiles=nocheck"
-+    fi
++    #if [ "$BUILD_ARCH" = "riscv64" ];then
++    #    DSC_BUILD_CMD="$DSC_BUILD_CMD --no-check-builddeps --build-profiles=nocheck"
++    #fi
 +
-+    if [ "$BUILD_ARCH" = "loong64" ];then
-+        DSC_BUILD_CMD="$DSC_BUILD_CMD --no-check-builddeps --build-profiles=nocheck"
-+    fi
++    #if [ "$BUILD_ARCH" = "loong64" ];then
++    #    DSC_BUILD_CMD="$DSC_BUILD_CMD --no-check-builddeps --build-profiles=nocheck"
++    #fi
 
      if grep -Eq '^Format: 3\.0 \(quilt\)$' $BUILD_ROOT$TOPDIR/SOURCES/$RECIPEFILE ; then
          printf "Recipe file '$RECIPEFILE' is being checked for 'DEBTRANSFORM-FILES'... "
