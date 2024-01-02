@@ -4,6 +4,7 @@ import json
 import os
 import requests
 from requests.auth import HTTPBasicAuth
+import xml.etree.ElementTree as ET
 
 # 设置RabbitMQ连接参数
 # rabbitmq_host = 'amqp.cicd.getdeepin.org'
@@ -103,6 +104,17 @@ def callback(ch, method, properties, body):
                             print("Failed to get pull_request")
                     else:
                         print("请求失败，状态码：", response.status_code)
+            if "deepin:stable" in project and "Event::BuildSuccess" in event_data_type:
+                url = f"https://build.deepin.com/source/{project}/{package}/_meta"
+                response = requests.get(url, auth=HTTPBasicAuth(obs_username, obs_password))
+                if response.status_code == 200:
+                    content = response.text
+                    root = ET.fromstring(content)
+                    build_tag = root.find('build')
+                    new_disable = ET.Element('disable', {'arch': arch, 'repository': 'stable'})
+                    build_tag.append(new_disable)
+                    xml_string = ET.tostring(root, encoding="utf-8").decode("utf-8")
+                    res = requests.put(url, auth=HTTPBasicAuth(obs_username, obs_password), data=xml_string)
 
 # 开始消费队列中的消息
 channel.basic_consume(queue=rabbitmq_queue, on_message_callback=callback, auto_ack=True)
