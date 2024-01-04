@@ -66,6 +66,91 @@ branch-protection:
       include:
         - "master"
         - "main"
+      repos:
+        Repository-Integration:
+          protect: false
+        Repository-Manager:
+          protect: false
+        rfcs:
+          protect: false
+        .WHLUG:
+          protect: false
+        sig-deepin-sysdev-team:
+          protect: false
+        infra-settings:
+          protect: false
+        .github:
+          protect: false
+        deepin-chatopt-script:
+          protect: false
+        SIG:
+          protect: false
+        .guide.deepin.org:
+          protect: false
+        deepin-WSL:
+          protect: false
+        deepin-rootfs:
+          protect: false
+        .planet.deepin.org:
+          protect: false
+        deepin-m1:
+          protect: false
+        sig-deepin-AI:
+          protect: false
+        sig-deepin-arm-pc:
+          protect: false
+        sig-deepin-hvml:
+          protect: false
+        .github-deepin-community:
+          protect: false
+        sig-deepin-riscv64:
+          protect: false
+        sig-deepin-virt:
+          protect: false
+        deepin-riscv-board:
+          protect: false
+        sig-deepin-cicd:
+          protect: false
+        sig-deepin-doc-doc-go:
+          protect: false
+        deepin-overlay:
+          protect: false
+        sig-deepin-surface:
+          protect: false
+        sig-deepin-wsl:
+          protect: false
+        sig-deepin-m1:
+          protect: false
+        sig-deepin-in-spanish:
+          protect: false
+        sig-deepin-media:
+          protect: false
+        sig-deepin-security-packaging:
+          protect: false
+        sig-deepin-kernel:
+          protect: false
+        sig-deepin-go:
+          protect: false
+        sig-deepin-network-manager:
+          protect: false
+        sig-deepin-input-method:
+          protect: false
+        sig-deepin-audio:
+          protect: false
+        sig-deepin-community-design:
+          protect: false
+        sig-deepin-glibc:
+          protect: false
+        sig-deepin-wayland-xorg:
+          protect: false
+        sig-deepin-systemd:
+          protect: false
+        sig-deepin-grub:
+          protect: false
+        sig-deepin-system-tools:
+          protect: false
+        sig-deepin-pkg:
+          protect: false
 
 tide:
   queries:
