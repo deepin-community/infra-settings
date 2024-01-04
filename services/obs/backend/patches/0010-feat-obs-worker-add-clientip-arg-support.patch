@@ -1,0 +1,77 @@
+From adaf8ddf7caccb9d3b0f2b3595c94fff91bcd9c1 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Wed, 3 Jan 2024 07:57:24 +0000
+Subject: [PATCH] feat: obs worker add clientip arg support
+
+---
+ bs_repserver | 5 +++--
+ bs_worker    | 9 ++++++++-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/bs_repserver b/bs_repserver
+index 1050dff..b99a431 100755
+--- a/bs_repserver
++++ b/bs_repserver
+@@ -1634,6 +1634,7 @@ sub workerstate {
+   die("cannot get your ip address\n") unless $peerip;
+   die("unsupported proto $peerproto\n") unless $peerproto eq 'http' || $peerproto eq 'https';
+   my $workerid = defined($cgi->{'workerid'}) ? $cgi->{'workerid'} : "$peerip:$peerport";
++  my $clientip = defined($cgi->{'clientip'}) ? $cgi->{'clientip'} : $peerip;
+   my $workerskel;
+   if (BSServer::have_content()) {
+     my $workerskelxml = BSServer::read_data(10000000);
+@@ -1679,9 +1680,9 @@ sub workerstate {
+     }
+     my $worker = {
+       'hostarch' => $harch,
+-      'ip' => $peerip,
++      'ip' => $clientip,
+       'port' => $peerport,
+-      'uri' => "$peerproto://$peerip:$peerport",
++      'uri' => "$peerproto://$clientip:$peerport",
+       'workerid' => $workerid,
+     };
+     $worker = { %$workerskel, %$worker } if $workerskel;
+@@ -4469,7 +4469,7 @@ my $dispatches = [
+   'POST:/worker cmd=checkconstraints $project $repository $arch $package' => \&checkconstraints,
+
+   # worker calls
+-  '!worker /worker $arch $port $state: workerid? working:bool? memory:num? disk:num? buildarch:arch* tellnojob:bool? proto:?' => \&workerstate,
++  '!worker /worker $arch $port $state: workerid? clientip:? working:bool? memory:num? disk:num? buildarch:arch* tellnojob:bool? proto:?' => \&workerstate,
+   '!worker /getbuildcode' => \&getbuildcode,
+   '!worker /getworkercode' => \&getworkercode,
+   '!worker POST:/putjob $arch $job $jobid $code:? now:num? kiwitree:bool? workerid?' => \&putjob,
+diff --git a/bs_worker b/bs_worker
+index 44a7479..7b9a460 100755
+--- a/bs_worker
++++ b/bs_worker
+@@ -94,6 +94,7 @@ my $vm_network;
+ my $emulator_script;
+ my $hugetlbfs;
+ my $workerid;
++my $clientip;
+ my $srcserver;
+ my @reposervers;
+ my $testmode;
+@@ -471,6 +472,11 @@ while (@ARGV) {
+     $workerid = shift @ARGV;
+     next;
+   }
++  if ($ARGV[0] eq '--clientip') {
++    shift @ARGV;
++    $clientip = shift @ARGV;
++    next;
++  }
+   if ($ARGV[0] eq '--test') {
+     shift @ARGV;
+     $testmode = 1;
+@@ -947,6 +953,7 @@ sub send_state {
+   my @args = ("state=$state", "arch=$ba", "port=$p");
+   push @args, "proto=$proto" if ($proto || 'http') ne 'http';
+   push @args, "workerid=$workerid" if defined $workerid;
++  push @args, "clientip=$clientip" if defined $clientip;
+   for my $server (@reposervers) {
+     next if $exclude && $server eq $exclude;
+     if ($state eq 'idle' && @reposervers > 1) {
+--
+2.35.3
