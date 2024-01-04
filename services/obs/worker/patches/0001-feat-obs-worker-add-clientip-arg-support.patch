@@ -1,0 +1,34 @@
+From 922b2ac5aa23b2d352adfa17168d1b4404f3bccf Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Thu, 4 Jan 2024 05:52:49 +0000
+Subject: [PATCH] feat: obs worker add clientip arg support
+
+---
+ obsworker | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/obsworker b/obsworker
+index 9f398fe..529ce82 100755
+--- a/obsworker
++++ b/obsworker
+@@ -80,6 +80,9 @@ fi
+ if [ -n "$OBS_WORKER_SECURITY_LEVEL" ]; then
+     OBS_WORKER_HOSTLABELS="OBS_WORKER_SECURITY_LEVEL_${OBS_WORKER_SECURITY_LEVEL} $OBS_WORKER_HOSTLABELS"
+ fi
++if [ -n "$OBS_CLIENT_IP" ]; then
++    OBS_CLIENTIP="--clientip $OBS_CLIENT_IP"
++fi
+
+ REPO_PARAM=
+ for i in $OBS_REPO_SERVERS; do
+@@ -482,7 +485,7 @@ case "$1" in
+                 MEMORY=
+             fi
+             echo "screen -t $WORKERID nice -n $OBS_NICE ./bs_worker --hardstatus $vmopt $port $proto --root $R" \
+-                "--statedir $workerdir/$I --id $WORKERID $REPO_PARAM $HUGETLBFS $HOSTLABELS" \
++                "--statedir $workerdir/$I --id $WORKERID $OBS_CLIENTIP $REPO_PARAM $HUGETLBFS $HOSTLABELS" \
+                 "$HOSTOWNER $OBS_JOBS $OBS_THREADS $OBS_TEST $OBS_WORKER_OPT $TMPFS $DEVICE $SWAP $MEMORY" \
+                 "$OBS_CLEANUP_CHROOT $OBS_WIPE_AFTER_BUILD $OBS_WORKER_USE_MKFS_COPYIN $ARCH $EMULATOR" \
+                 >> $screenrc
+--
+2.35.3
