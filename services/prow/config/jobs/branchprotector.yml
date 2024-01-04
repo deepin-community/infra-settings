@@ -1,16 +1,16 @@
 periodics:
-- cron: "30 23 * * *"  # Every day at 23:30
+- cron: "26 * * * *"  # Every hour at 26 minutes past the hour
   name: ci-branchprotector
   #cluster: test-infra-trusted
   labels:
     app: branchprotector
-  decorate: false
-  #decoration_config:
-  #  timeout: 5h
-  #extra_refs:
-  #- org: kubernetes
-  #  repo: test-infra
-  #  base_ref: master
+  decorate: true
+  decoration_config:
+    timeout: 24h # deepin-community has a lot of repositories, need long time
+  extra_refs:
+  - org: deepin-community
+    repo: infra-settings
+    base_ref: master
   spec:
     nodeSelector:
       kubernetes.io/arch: amd64
@@ -65,4 +65,4 @@ periodics:
     testgrid-dashboards: sig-testing-misc
     testgrid-tab-name: branchprotector
     testgrid-alert-email: hudeng@deepin.org
-    description: Runs Prow's branchprotector to apply configured GitHub status context requirements and merge policies.
+    description: Runs Prow branchprotector to apply configured GitHub status context requirements and merge policies.
