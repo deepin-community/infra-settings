@@ -3,6 +3,7 @@ import pika
 import json
 import os
 import requests
+import re
 from requests.auth import HTTPBasicAuth
 import xml.etree.ElementTree as ET
 
@@ -24,8 +25,10 @@ parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, c
 connection = pika.BlockingConnection(parameters)
 channel = connection.channel()
 
+obs_host = os.environ.get('OBSHOST')
 obs_username = os.environ.get('OSCUSER')
 obs_password = os.environ.get('OSCPASS')
+github_integration_repo = os.environ.get('GITHUB_INTEGRATION_REPO', "peeweep-test/Repository-Integration")
 github_token = os.environ.get('GITHUB_TOKEN')
 
 # 修改这里的参数值，使其与队列的当前设置相匹配
@@ -52,10 +55,11 @@ def callback(ch, method, properties, body):
             arch = event_data_payload.get('arch', '')
             # 同步构建状态到github commit
             if "deepin:CI" in project and "Event::Build" in event_data_type:
+                #print(f"Handle {project}/{package} {arch} {repository} build event: {event_data_type}")
                 if "PR-" in project or "topics:" in project:
                     print(f"Handle {project}/{package} {arch} build event: {event_data_type}")
                     # https://build.deepin.com/source/deepin:CI:peeweep-test:iptsd:PR-12/iptsd/_branch_request
-                    url = f"https://build.deepin.com/source/{project}/{package}/_branch_request"
+                    url = f"{obs_host}/source/{project}/{package}/_branch_request"
                     response = requests.get(url, auth=HTTPBasicAuth(obs_username, obs_password))
                     if response.status_code == 200:
                         content = response.text
@@ -81,7 +85,7 @@ def callback(ch, method, properties, body):
                                         if event_data_type == "Event::BuildFail":
                                             status = "failure"
                                         context = f"OBS: {repository}/{arch}"
-                                        target_url = f"https://build.deepin.com/package/live_build_log/{project}/{package}/{repository}/{arch}"
+                                        target_url = f"{obs_host}/package/live_build_log/{project}/{package}/{repository}/{arch}"
                                         data = {
                                             "state": status,
                                             "context": context,
@@ -104,6 +108,43 @@ def callback(ch, method, properties, body):
                             print("Failed to get pull_request")
                     else:
                         print("请求失败，状态码：", response.status_code)
+                elif "TestingIntegration" in project:
+                    print(f"Handle {project}/{package} {arch} {repository} build event: {event_data_type}")
+                    pr_number = re.search(r'\d+', project).group()
+                    headers = {
+                        "Authorization": f"token {github_token}",
+                        "Content-Type": "application/vnd.github+json"
+                    }
+                    url = f"https://api.github.com/repos/{github_integration_repo}/pulls/{pr_number}"
+                    response = requests.get(url, headers=headers)
+                    data = response.json()
+                    #sha = data['head']['sha']
+                    head = data.get('head', '')
+                    if head != "":
+                        sha = head.get('sha', '')
+                        if sha != "":
+                            url = f"https://api.github.com/repos/{github_integration_repo}/statuses/{sha}"
+                            status = "success"
+                            if event_data_type == "Event::BuildFail":
+                                status = "failure"
+                            context = f"{package} {arch} testing repository building"
+                            target_url = f"{obs_host}/package/live_build_log/{project}/{package}/{repository}/{arch}"
+                            data = {
+                                "state": status,
+                                "context": context,
+                                "target_url": target_url
+                            }
+                            response = requests.post(url, headers=headers, data=json.dumps(data))
+
+                            if response.status_code == 201:
+                                print("Commit status uploaded successfully.")
+                            else:
+                                print("Failed to upload commit status.")
+                        else:
+                            print("Failed to get sha with head: " + head)
+                    else:
+                        print(f"Failed to get {url}'s head with response {data}")
+                        print(response.text)
             if "deepin:stable" in project and "Event::BuildSuccess" in event_data_type:
                 url = f"https://build.deepin.com/source/{project}/{package}/_meta"
                 response = requests.get(url, auth=HTTPBasicAuth(obs_username, obs_password))
