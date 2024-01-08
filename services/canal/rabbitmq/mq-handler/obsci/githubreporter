@@ -21,7 +21,8 @@ rabbitmq_queue = os.environ.get('rabbitmq_queue')
 
 # 创建RabbitMQ连接
 credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
-parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, credentials=credentials)
+parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, credentials=credentials,
+                heartbeat=0, connection_attempts=3, socket_timeout=300)
 connection = pika.BlockingConnection(parameters)
 channel = connection.channel()
 
