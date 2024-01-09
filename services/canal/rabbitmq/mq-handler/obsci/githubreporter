@@ -128,7 +128,7 @@ def callback(ch, method, properties, body):
                             status = "success"
                             if event_data_type == "Event::BuildFail":
                                 status = "failure"
-                            context = f"{package} {arch} testing repository building"
+                            context = f"{package}_{arch}_testing_repository_building"
                             target_url = f"{obs_host}/package/live_build_log/{project}/{package}/{repository}/{arch}"
                             data = {
                                 "state": status,
