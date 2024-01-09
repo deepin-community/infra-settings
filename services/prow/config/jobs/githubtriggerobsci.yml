@@ -53,6 +53,11 @@ presubmits:
             secretKeyRef:
               name: obs-api-credential
               key: github-token
+        - name: OBS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-host
         - name: CONFIG_YAML_FILE
           value: "/etc/config/config.yaml"
         volumeMounts:

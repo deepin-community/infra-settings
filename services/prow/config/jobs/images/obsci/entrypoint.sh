@@ -18,6 +18,11 @@ if [ -z "$OSCPASS" ]; then
     exit -1
 fi
 
+if [ -z "$OBS_HOST" ]; then
+    echo "OBS Host missing, exit"
+    exit -1
+fi
+
 # 定义YAML文件路径
 if [ -z "$CONFIG_YAML_FILE" ]; then
     yaml_file="test.yml"
@@ -130,18 +135,18 @@ fi
 
 metaconfig=${metaconfig#\"}
 echo -e ${metaconfig%\"} | sed 's/\\"/"/g' > meta.xml
-result=$(curl -u $OSCUSER:$OSCPASS "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/_meta"|grep "unknown_project")
+result=$(curl -u $OSCUSER:$OSCPASS "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/_meta"|grep "unknown_project")
 if [ "$result" != "" ];then
     echo "Creating Obs CI project..."
     sed -i "s#PROJECT_NAME#${PROJECT_NAME}#g" meta.xml
-    curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @meta.xml "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/_meta"
+    curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @meta.xml "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/_meta"
 fi
 
 if [ "$projectconfig" != "" ]; then
     echo "Project configuration"
 fi
 
-result=$(curl -u $OSCUSER:$OSCPASS "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_meta"|grep "unknown_package")
+result=$(curl -u $OSCUSER:$OSCPASS "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_meta"|grep "unknown_package")
 #echo "\n********result: $result ********\n"
 if [ "$result" != "" ];then
     echo "Creating Obs CI package..."
@@ -149,33 +154,33 @@ if [ "$result" != "" ];then
     echo -e ${packageconfig%\"} | sed 's/\\"/"/g' > meta1.xml
     sed -i "s#PKGNAME#${REPO_NAME}#g" meta1.xml
     sed -i "s#PROJECT_NAME#${PROJECT_NAME}#g" meta1.xml
-    curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @meta1.xml "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_meta"
+    curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @meta1.xml "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_meta"
 fi
 
 # __branch_request文件中包含的sha值不变的情况下不重复提交
 # 减少source server的源码处理次数，节约有限的带宽
-oldsha=$(curl -u $OSCUSER:$OSCPASS "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request" | yq -e '.pull_request.head.sha')
+oldsha=$(curl -u $OSCUSER:$OSCPASS "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request" | yq -e '.pull_request.head.sha')
 oldsha=${oldsha#\"}
 oldsha=${oldsha%\"}
 if [ "$oldsha" != "$PULL_PULL_SHA" ]; then
     # 存在_service文件的情况下不重复提交
-    result=$(curl -u $OSCUSER:$OSCPASS "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"|grep "no such file")
+    result=$(curl -u $OSCUSER:$OSCPASS "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"|grep "no such file")
     if [ "$result" != "" ]; then
         echo "Uploading _service..."
         serviceconfig=${serviceconfig#\"}
         echo -e ${serviceconfig%\"} | sed 's/\\"/"/g' > _service
         sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _service
-        curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @_service -s "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"
+        curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @_service -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"
     fi
     echo "Uploading _branch_request..."
     brconfig=${brconfig#\"}
     echo -e ${brconfig%\"} | sed 's/\\"/"/g' > _branch_request
     sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _branch_request
     sed -i "s#TAGSHA#${PULL_PULL_SHA}#g" _branch_request
-    curl -X PUT -u "$OSCUSER:$OSCPASS" -d @_branch_request -s "https://build.deepin.com/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request"
+    curl -X PUT -u "$OSCUSER:$OSCPASS" -d @_branch_request -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request"
 else
     # 如果__branch_request的sha值未发生变化，触发rebuild，这里主要应对github通过'/test github-trigger-obs-ci'命令触发rebuild的场景
-    curl -X POST -u "$OSCUSER:$OSCPASS" "https://build.deepin.com/build/deepin:CI:$PROJECT_NAME?cmd=rebuild&package=$REPO_NAME"
+    curl -X POST -u "$OSCUSER:$OSCPASS" "$OBS_HOST/build/deepin:CI:$PROJECT_NAME?cmd=rebuild&package=$REPO_NAME"
 fi
 
 echo "Setting github commit status..."
@@ -206,7 +211,7 @@ do
     do
         arch=${arch#\"}
         arch=${arch%\"}
-        echo "{\"state\":\"pending\", \"context\":\"OBS: ${reponame}/${arch}\", \"target_url\":\"https://build.deepin.com/package/live_build_log/deepin:CI:${PROJECT_NAME}/${REPO_NAME}/${reponame}/${arch}\"}" > status.data
+        echo "{\"state\":\"pending\", \"context\":\"OBS: ${reponame}/${arch}\", \"target_url\":\"$OBS_HOST/package/live_build_log/deepin:CI:${PROJECT_NAME}/${REPO_NAME}/${reponame}/${arch}\"}" > status.data
         curl -X POST -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_TOKEN" -d @status.data https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/statuses/${PULL_PULL_SHA}
     done
 done

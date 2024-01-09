@@ -55,6 +55,11 @@ postsubmits:
             secretKeyRef:
               name: obs-api-credential
               key: obs-token
+        - name: OBS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-host
     annotations:
       testgrid-num-failures-to-alert: '6'
       testgrid-alert-stale-results-hours: '12'
