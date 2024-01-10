@@ -29,6 +29,9 @@ postsubmits:
       - ip: "10.20.64.86"
         hostnames:
         - "avatars.githubusercontent.com"
+      - ip: "8.136.204.218"
+        hostnames:
+        - "build.deepin.com"
       containers:
       - name: obs-src-sync
         image: hub.deepin.com/prow/obssrcsync:latest
@@ -98,6 +101,9 @@ postsubmits:
       - ip: "10.20.64.86"
         hostnames:
         - "avatars.githubusercontent.com"
+      - ip: "8.136.204.218"
+        hostnames:
+        - "build.deepin.com"
       containers:
       - name: obs-src-sync
         image: hub.deepin.com/prow/obssrcsync:latest
@@ -124,6 +130,11 @@ postsubmits:
             secretKeyRef:
               name: obs-api-credential
               key: obs-token
+        - name: OBS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-host
     annotations:
       testgrid-num-failures-to-alert: '6'
       testgrid-alert-stale-results-hours: '12'

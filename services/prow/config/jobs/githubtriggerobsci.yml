@@ -32,6 +32,9 @@ presubmits:
       - ip: "10.20.64.86"
         hostnames:
         - "avatars.githubusercontent.com"
+      - ip: "8.136.204.218"
+        hostnames:
+        - "build.deepin.com"
       containers:
       - name: github-trigger-obs-ci
         image: hub.deepin.com/prow/githubtriggerobsci:latest
@@ -80,7 +83,7 @@ presubmits:
       testgrid-dashboards: sig-deepin-cicd
       testgrid-tab-name: trigger-obs-ci
       testgrid-alert-email: hudeng@deepin.org
-      description: Runs Prow's trigger-obs-ci to config and trigger obs ci, and use canal return obs ci build job status.
+      description: Runs Prow trigger-obs-ci to config and trigger obs ci, and use canal return obs ci build job status.
 
   deepin-community:
   - name: github-trigger-obs-ci
@@ -112,6 +115,9 @@ presubmits:
       - ip: "10.20.64.86"
         hostnames:
         - "avatars.githubusercontent.com"
+      - ip: "8.136.204.218"
+        hostnames:
+        - "build.deepin.com"
       containers:
       - name: github-trigger-obs-ci
         image: hub.deepin.com/prow/githubtriggerobsci:latest
@@ -133,6 +139,11 @@ presubmits:
             secretKeyRef:
               name: obs-api-credential
               key: github-token
+        - name: OBS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-host
         - name: CONFIG_YAML_FILE
           value: "/etc/config/config.yaml"
         volumeMounts:
@@ -155,4 +166,4 @@ presubmits:
       testgrid-dashboards: sig-deepin-cicd
       testgrid-tab-name: trigger-obs-ci
       testgrid-alert-email: hudeng@deepin.org
-      description: Runs Prow's trigger-obs-ci to config and trigger obs ci, and use canal return obs ci build job status.
+      description: Runs Prow trigger-obs-ci to config and trigger obs ci, and use canal return obs ci build job status.

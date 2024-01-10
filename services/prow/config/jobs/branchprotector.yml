@@ -1,5 +1,5 @@
 periodics:
-- cron: "26 * * * *"  # Every hour at 26 minutes past the hour
+- cron: "0 0 * * 6"  # Every hour at 26 minutes past the hour
   name: ci-branchprotector
   #cluster: test-infra-trusted
   labels:

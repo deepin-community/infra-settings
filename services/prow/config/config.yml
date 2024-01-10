@@ -151,6 +151,8 @@ branch-protection:
           protect: false
         sig-deepin-pkg:
           protect: false
+        sig-deepin-sysdev-team:
+          protect: false
 
 tide:
   queries:
@@ -162,6 +164,8 @@ tide:
     excludedRepos:
     - deepin-community/template-repository
     - deepin-community/rfcs
+    - deepin-community/SIG
+    - deepin-community/Repository-Integration
     missingLabels:
     - needs-rebase
     - do-not-merge/hold
@@ -234,3 +238,82 @@ decorate_all_jobs: true
 #    containers:
 #    - image: alpine
 #      command: ["/bin/date"]
+
+obscijobs:
+- repos:
+  - linuxdeepin
+  - deepin-community
+  - peeweep-test
+  project_config: |
+    ""
+  project_meta_tpl: |
+    <project name="deepin:CI:PROJECT_NAME">
+      <title/>
+      <description/>
+      <repository name="deepin_develop">
+        <path project="deepin:CI" repository="deepin_develop"/>
+        <arch>x86_64</arch>
+        <arch>aarch64</arch>
+      </repository>
+    </project>
+  package_meta_tpl: |
+    <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+      <title/>
+      <description/>
+    </package>
+  project_br_tpl: '{"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}'
+  project_service_tpl: |
+    <services>
+      <service name="obs_gbp">
+        <param name="url">https://github.com/REPO.git</param>
+        <param name="scm">git</param>
+        <param name="exclude">.git</param>
+        <param name="exclude">.github</param>
+        <param name="versionformat">@CHANGELOG@</param>
+        <param name="gbp-dch-release-update">enable</param>
+      </service>
+    </services>
+  excluderepos:
+  - deepin-community/SIG
+  - deepin-community/rfcs
+  - deepin-community/Repository-Integration
+  - deepin-community/Repository-Manager
+  - deepin-community/.github
+  - deepin-community/sig-deepin-shared-libs
+  - deepin-communty/sig-Phytium
+  - deepin-communty/sig-openEuler
+  - deepin-communty/sig-deepin-hvml
+  - deepin-community/sig-dde-porting
+  - deepin-community/sig-deepin-virt
+  - deepin-community/sig-linglong
+  - deepin-community/sig-deepin-cicd
+  - deepin-community/sig-deepin-doc-doc-go
+  - deepin-community/sig-deepin-qt
+  - deepin-community/sig-deepin-surface
+  - deepin-community/sig-deepin-wsl
+  - deepin-community/sig-deepin-m1
+  - deepin-community/sig-deepin-in-spanish
+  - deepin-community/sig-template
+  - deepin-community/sig-deepin-hardware-support
+  - deepin-community/sig-deepin-media
+  - deepin-community/sig-deepin-security-packaging
+  - deepin-community/sig-deepin-kernel
+  - deepin-community/sig-deepin-go
+  - deepin-community/sig-deepin-network-manager
+  - deepin-community/sig-deepin-input-method
+  - deepin-community/sig-deepin-audio
+  - deepin-community/sig-deepin-community-design
+  - deepin-community/sig-gcc-packaging
+  - deepin-community/sig-deepin-glibc
+  - deepin-community/sig-deepin-wayland-xorg
+  - deepin-community/sig-deepin-systemd
+  - deepin-community/sig-deepin-grub
+  - deepin-community/sig-deepin-system-tools
+  - deepin-community/sig-deepin-pkg
+  - deepin-community/sig-deepin-sysdev-team
+  - deepin-community/.test-infra
+  - deepin-community/.actions-runner-controller
+  - deepin-community/.guide.deepin.org
+  - deepin-community/.blog.deepin.org
+  - deepin-community/infra-settings
+  - deepin-community/deepin-chatopt-script

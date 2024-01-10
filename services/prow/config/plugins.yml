@@ -7,6 +7,9 @@ plugins:
     - cat
     - dog
     - updatebot
+    - approve
+    - skip
+    - topic
   deepin-community:
     plugins:
     - approve
@@ -24,6 +27,8 @@ plugins:
     - wip
     - yuks
     - welcome
+    - topic
+    - skip
   peeweep-test:
     plugins:
     - approve
@@ -42,11 +47,14 @@ plugins:
     - yuks
     - welcome
     - updatebot
+    - project
+    - topic
+    - skip
 approve:
 - repos:
+  - linuxdeepin/dtk
   - peeweep-test
   - deepin-community
-  - linuxdeepin/dtk
   require_self_approval: true
   #lgtm_acts_as_approve: true
 triggers:
@@ -60,11 +68,10 @@ owners:
     deepin-community:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
-      owners_file_path: 'debian/deepin'
+      owners_file_path: 'https://raw.githubusercontent.com/deepin-community/template-repository/master/debian/deepin/'
     peeweep-test:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
-      owners_file_path: 'debian/deepin'
     linuxdeepin:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
@@ -84,6 +91,15 @@ owners:
     peeweep-test/infra-settings:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
+    deepin-community/.planet.deepin.org:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
+    linuxdeepin/linglong:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
+    deepin-community/SIG:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
 welcome:
 - repos:
   - linuxdeepin
@@ -91,8 +107,14 @@ welcome:
   - peeweep-test
   # MessageTemplate is the welcome message template to post on new-contributor PRs
   # For the info struct see prow/plugins/welcome/welcome.go's PRInfo
-  message_template: "Hi @{{.AuthorLogin}}. Thanks for your PR.:smiley:"
+  message_template: "Hi @{{.AuthorLogin}}. Thanks for your PR. :smiley:"
 updatebot:
   repos:
     - linuxdeepin/dtk
-    - peeweep-test/dtk
+topic:
+- repos:
+  - peeweep-test
+  - linuxdeepin
+  - deepin-community
+  integrate_milestone: "V23-Beta3"
+  integrate_repo: "deepin-community/Repository-Integration"
