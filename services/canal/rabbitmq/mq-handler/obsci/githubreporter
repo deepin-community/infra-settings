@@ -86,7 +86,7 @@ def callback(ch, method, properties, body):
                                         if event_data_type == "Event::BuildFail":
                                             status = "failure"
                                         context = f"OBS: {repository}/{arch}"
-                                        target_url = f"{obs_host}/package/live_build_log/{project}/{package}/{repository}/{arch}"
+                                        target_url = f"https://build.deepin.com/package/live_build_log/{project}/{package}/{repository}/{arch}"
                                         data = {
                                             "state": status,
                                             "context": context,
@@ -129,7 +129,7 @@ def callback(ch, method, properties, body):
                             if event_data_type == "Event::BuildFail":
                                 status = "failure"
                             context = f"{package}_{arch}_testing_repository_building"
-                            target_url = f"{obs_host}/package/live_build_log/{project}/{package}/{repository}/{arch}"
+                            target_url = f"https://build.deepin.com/package/live_build_log/{project}/{package}/{repository}/{arch}"
                             data = {
                                 "state": status,
                                 "context": context,
@@ -147,7 +147,7 @@ def callback(ch, method, properties, body):
                         print(f"Failed to get {url}'s head with response {data}")
                         print(response.text)
             if "deepin:stable" in project and "Event::BuildSuccess" in event_data_type:
-                url = f"https://build.deepin.com/source/{project}/{package}/_meta"
+                url = f"{obs_host}/source/{project}/{package}/_meta"
                 response = requests.get(url, auth=HTTPBasicAuth(obs_username, obs_password))
                 if response.status_code == 200:
                     content = response.text

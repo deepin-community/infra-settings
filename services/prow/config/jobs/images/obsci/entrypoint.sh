@@ -211,7 +211,7 @@ do
     do
         arch=${arch#\"}
         arch=${arch%\"}
-        echo "{\"state\":\"pending\", \"context\":\"OBS: ${reponame}/${arch}\", \"target_url\":\"$OBS_HOST/package/live_build_log/deepin:CI:${PROJECT_NAME}/${REPO_NAME}/${reponame}/${arch}\"}" > status.data
+        echo "{\"state\":\"pending\", \"context\":\"OBS: ${reponame}/${arch}\", \"target_url\":\"https://build.deepin.com/package/live_build_log/deepin:CI:${PROJECT_NAME}/${REPO_NAME}/${reponame}/${arch}\"}" > status.data
         curl -X POST -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_TOKEN" -d @status.data https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/statuses/${PULL_PULL_SHA}
     done
 done
