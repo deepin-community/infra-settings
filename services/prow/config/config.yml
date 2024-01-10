@@ -151,8 +151,6 @@ branch-protection:
           protect: false
         sig-deepin-pkg:
           protect: false
-        sig-deepin-sysdev-team:
-          protect: false
 
 tide:
   queries:
@@ -229,7 +227,7 @@ tide:
     deepin-community: rebase
     linuxdeepin: rebase
 
-decorate_all_jobs: true
+#decorate_all_jobs: true
 #periodics:
 #- interval: 1m
 #  agent: kubernetes
@@ -317,3 +315,34 @@ obscijobs:
   - deepin-community/.blog.deepin.org
   - deepin-community/infra-settings
   - deepin-community/deepin-chatopt-script
+- repos:
+  - linuxdeepin/deepin-osconfig
+  project_config: |
+    ""
+  project_meta_tpl: |
+    <project name="deepin:CI:PROJECT_NAME">
+      <title/>
+      <description/>
+      <repository name="deepin_develop">
+        <path project="deepin:CI" repository="deepin_develop"/>
+        <arch>x86_64</arch>
+        <arch>aarch64</arch>
+      </repository>
+    </project>
+  package_meta_tpl: |
+    <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+      <title/>
+      <description/>
+    </package>
+  project_br_tpl: '{"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}'
+  project_service_tpl: |
+    <services>
+      <service name="obs_gbp">
+        <param name="url">https://github.com/REPO.git</param>
+        <param name="scm">git</param>
+        <param name="exclude">.git</param>
+        <param name="exclude">.github</param>
+        <param name="versionformat">@CHANGELOG@</param>
+        <param name="gbp-dch-release-update">enable</param>
+      </service>
+    </services>
