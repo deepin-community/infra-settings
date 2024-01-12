@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ttrss-mercury
+  name: ttrss-mercury
+  namespace: rsshub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ttrss-mercury
+  template:
+    metadata:
+      labels:
+        app: ttrss-mercury
+    spec:
+      containers:
+        - image: wangqiru/mercury-parser-api:latest
+          name: mercury
+      restartPolicy: Always

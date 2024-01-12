@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ttrss-postgres
+  name: ttrss-postgres-data
+  namespace: rsshub
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "rsshub"
+  resources:
+    requests:
+      storage: 2Gi

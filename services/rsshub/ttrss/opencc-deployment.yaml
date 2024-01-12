@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ttrss-opencc
+  name: ttrss-opencc
+  namespace: rsshub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ttrss-opencc
+  template:
+    metadata:
+      labels:
+        app: ttrss-opencc
+    spec:
+      containers:
+        - env:
+            - name: NODE_ENV
+              value: production
+          image: wangqiru/opencc-api-server:latest
+          name: opencc
+      restartPolicy: Always
+      nodeSelector:
+        kubernetes.io/arch: amd64

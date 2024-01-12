@@ -1,0 +1,96 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ttrss
+  name: ttrss
+  namespace: rsshub
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: ttrss
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ttrss
+    spec:
+      containers:
+        - env:
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: ttrss-db
+                  key: password
+            - name: PGID
+              value: '1000'
+            - name: PUID
+              value: '1000'
+            - name: SELF_URL_PATH
+              value: 'https://rsshub.cicd.getdeepin.org'
+            - name: DB_HOST
+              value: ttrss-postgres
+          image: 'wangqiru/ttrss:nightly'
+          imagePullPolicy: Always
+          name: ttrss
+          ports:
+            - containerPort: 80
+          resources: {}
+          stdin: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+          volumeMounts:
+            - mountPath: /var/www/feed-icons
+              name: ttrss-feed-icons
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: ttrss-feed-icons
+          persistentVolumeClaim:
+            claimName: ttrss-feed-icons
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ttrss
+  namespace: rsshub
+spec:
+  selector:
+    app: ttrss
+  ports:
+    - name: 'ttrss-port'
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    k8s.kuboard.cn/name: ttrss
+  name: ttrss
+  namespace: rsshub
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ttrss.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: ttrss
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
