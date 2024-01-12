@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app: ttrss-postgres
+    k8s.kuboard.cn/layer: db
+    k8s.kuboard.cn/name: ttrss-postgres
+  name: ttrss-postgres
+  namespace: rsshub
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: ttrss-postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ttrss-postgres
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: ttrss-db
+          image: 'postgres:13-alpine'
+          imagePullPolicy: IfNotPresent
+          name: postgres
+          ports:
+            - containerPort: 5432
+              name: pgport
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: ttrss-postgres-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      volumes:
+        - name: ttrss-postgres-data
+          persistentVolumeClaim:
+            claimName: ttrss-postgres-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app: ttrss-postgres
+    k8s.kuboard.cn/layer: db
+    k8s.kuboard.cn/name: ttrss-postgres
+  name: ttrss-postgres
+  namespace: rsshub
+spec:
+  ports:
+    - name: pgsql-port
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+  selector:
+    app: ttrss-postgres
+  type: ClusterIP

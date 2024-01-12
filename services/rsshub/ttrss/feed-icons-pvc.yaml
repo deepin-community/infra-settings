@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ttrss
+  name: ttrss-feed-icons
+  namespace: rsshub
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "rsshub"
+  resources:
+    requests:
+      storage: 2Gi
