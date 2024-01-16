@@ -177,6 +177,7 @@ tide:
     - linuxdeepin/dtkwidget
     - linuxdeepin/dtkdeclarative
     - linuxdeepin/deepin-unioncode
+    - linuxdeepin/dde-shell
     labels:
     - approved
     missingLabels:
