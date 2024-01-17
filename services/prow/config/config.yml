@@ -347,3 +347,43 @@ obscijobs:
         <param name="gbp-dch-release-update">enable</param>
       </service>
     </services>
+- repos:
+  - linuxdeepin/dde-shell
+  project_meta_tpl: |
+    <project name="deepin:CI:PROJECT_NAME">
+      <title/>
+      <description/>
+      <repository name="deepin_develop">
+        <path project="deepin:CI" repository="deepin_develop"/>
+        <arch>x86_64</arch>
+        <arch>aarch64</arch>
+      </repository>
+      <repository name="debian">
+        <path project="deepin:CI" repository="debian_sid"/>
+        <arch>x86_64</arch>
+      </repository>
+      <repository name="archlinux">
+        <path project="deepin:CI" repository="archlinux"/>
+        <arch>x86_64</arch>
+      </repository>
+    </project>
+  package_meta_tpl: |
+    <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+      <title/>
+      <description/>
+    </package>
+  project_br_tpl: '{"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}'
+  project_service_tpl: |
+    <services>
+      <service name="obs_gbp">
+        <param name="url">https://github.com/linuxdeepin/REPO.git</param>
+        <param name="scm">git</param>
+        <param name="exclude">.git</param>
+        <param name="exclude">.github</param>
+        <param name="versionformat">@CHANGELOG@@DEEPIN_OFFSET@</param>
+        <param name="extract">archlinux/*</param>
+      </service>
+      <service name="set_version">
+        <param name="file">_service:obs_gbp:PKGBUILD</param>
+      </service>
+    </services>
