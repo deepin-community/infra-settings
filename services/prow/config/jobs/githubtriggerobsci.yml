@@ -250,3 +250,86 @@ presubmits:
       testgrid-tab-name: trigger-obs-ci
       testgrid-alert-email: hudeng@deepin.org
       description: Runs Prow trigger-obs-ci to config and trigger obs ci, and use canal return obs ci build job status.
+
+  linuxdeepin/dde-shell:
+  - name: github-trigger-obs-ci
+    #cluster: test-infra-trusted
+    decorate: false
+    always_run: false
+    skip_if_only_changed: "^.github/|^.obs/|^.reuse/|\\.(md|adoc)$|^(README|LICENSE)$"
+    labels:
+      app: trigger-obs-ci
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      hostAliases:
+      - ip: "10.20.64.81"
+        hostnames:
+        - "github.com"
+      - ip: "10.20.64.82"
+        hostnames:
+        - "api.github.com"
+      - ip: "10.20.64.83"
+        hostnames:
+        - "github.githubassets.com"
+      - ip: "10.20.64.84"
+        hostnames:
+        - "raw.githubusercontent.com"
+      - ip: "10.20.64.85"
+        hostnames:
+        - "collector.github.com"
+      - ip: "10.20.64.86"
+        hostnames:
+        - "avatars.githubusercontent.com"
+      - ip: "8.136.204.218"
+        hostnames:
+        - "build.deepin.com"
+      containers:
+      - name: github-trigger-obs-ci
+        image: hub.deepin.com/prow/githubtriggerobsci:latest
+        command:
+        - /entrypoint.sh
+        env:
+        - name: OSCUSER
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: username
+        - name: OSCPASS
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: password
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: github-token
+        - name: OBS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-host
+        - name: CONFIG_YAML_FILE
+          value: "/etc/config/config.yaml"
+        volumeMounts:
+        - name: github-token
+          mountPath: /etc/github
+          readOnly: true
+        - name: config
+          mountPath: /etc/config
+          readOnly: true
+      volumes:
+      - name: github-token
+        secret:
+          secretName: github-token
+      - name: config
+        configMap:
+          name: config
+    annotations:
+      testgrid-num-failures-to-alert: '6'
+      testgrid-alert-stale-results-hours: '12'
+      testgrid-dashboards: sig-deepin-cicd
+      testgrid-tab-name: trigger-obs-ci
+      testgrid-alert-email: hudeng@deepin.org
+      description: Runs Prow trigger-obs-ci to config and trigger obs ci, and use canal return obs ci build job status.
