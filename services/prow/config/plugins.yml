@@ -64,7 +64,7 @@ triggers:
   - linuxdeepin
   trigger_github_workflows: true
   trusted_apps:
-    - deepin-community-bot[bot]
+    - deepin-community-bot
 owners:
   filenames:
     deepin-community:
