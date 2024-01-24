@@ -286,3 +286,75 @@ postsubmits:
       testgrid-tab-name: obs-src-sync
       testgrid-alert-email: hudeng@deepin.org
       description: Runs Prow obs-src-sync job to sync github pr merged code to obs.
+
+  linuxdeepin/linglong:
+  - name: obs-src-sync
+    always_run: true
+    decorate: false
+    branches:
+      - ^release/*$
+    labels:
+      app: obs-src-sync
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      hostAliases:
+      - ip: "10.20.64.81"
+        hostnames:
+        - "github.com"
+      - ip: "10.20.64.82"
+        hostnames:
+        - "api.github.com"
+      - ip: "10.20.64.83"
+        hostnames:
+        - "github.githubassets.com"
+      - ip: "10.20.64.84"
+        hostnames:
+        - "raw.githubusercontent.com"
+      - ip: "10.20.64.85"
+        hostnames:
+        - "collector.github.com"
+      - ip: "10.20.64.86"
+        hostnames:
+        - "avatars.githubusercontent.com"
+      - ip: "8.136.204.218"
+        hostnames:
+        - "build.deepin.com"
+      containers:
+      - name: obs-src-sync
+        image: hub.deepin.com/prow/obssrcsync:latest
+        command:
+        - /entrypoint.sh
+        env:
+        - name: OSCUSER
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: username
+        - name: OSCPASS
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: password
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: github-token
+        - name: OBSTOKEN
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-token
+        - name: OBS_HOST
+          valueFrom:
+            secretKeyRef:
+              name: obs-api-credential
+              key: obs-host
+    annotations:
+      testgrid-num-failures-to-alert: '6'
+      testgrid-alert-stale-results-hours: '12'
+      testgrid-dashboards: sig-deepin-cicd
+      testgrid-tab-name: obs-src-sync
+      testgrid-alert-email: hudeng@deepin.org
+      description: Runs Prow obs-src-sync job to sync github pr merged code to obs.
