@@ -318,6 +318,7 @@ obscijobs:
   - deepin-community/deepin-chatopt-script
 - repos:
   - linuxdeepin/deepin-osconfig
+  - linuxdeepin/linglong
   project_config: |
     ""
   project_meta_tpl: |
