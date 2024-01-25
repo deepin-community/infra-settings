@@ -235,8 +235,8 @@ Subject: [PATCH 2/4] fix: orig.tar contains debian/ directory
 
 use git archive gitattributes exclude debian/ directory
 ---
- TarSCM/archive.py | 4 ++++
- 1 file changed, 4 insertions(+)
+ TarSCM/archive.py | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 diff --git a/TarSCM/archive.py b/TarSCM/archive.py
 index 1a1ee78..1640414 100644
@@ -246,9 +246,13 @@ index 1a1ee78..1640414 100644
              logging.info("removing gbp.conf")
              os.remove(scm_object.clone_dir + "/debian/gbp.conf")
  
-+        # ignore debian directory
++        # ignore debian and .github directory
 +        with open(os.path.join(scm_object.clone_dir, ".git/info/attributes"), "a+") as f:
 +            f.write("/debian/ export-ignore\n/.github/ export-ignore\n")
++
++        if os.path.exists(scm_object.clone_dir + "/.github"):
++            logging.info("removing .github directory")
++            shutil.rmtree(scm_object.clone_dir + "/.github")
 +
          #upstreamversion = version.split('-')[0]
          upstreamversion_end = version.rfind('-')
