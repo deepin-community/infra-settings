@@ -10,6 +10,7 @@ plugins:
     - approve
     - skip
     - topic
+    - lifecycle  # Allow /lifecycle stale
   deepin-community:
     plugins:
     - approve
@@ -29,6 +30,7 @@ plugins:
     - welcome
     - topic
     - skip
+    - lifecycle  # Allow /lifecycle stale
   peeweep-test:
     plugins:
     - approve
@@ -50,6 +52,7 @@ plugins:
     - project
     - topic
     - skip
+    - lifecycle  # Allow /lifecycle stale
 approve:
 - repos:
   - linuxdeepin/dtk
