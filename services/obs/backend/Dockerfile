@@ -38,6 +38,7 @@ RUN patch -p1 -d /usr/lib/obs/server/BSDispatcher/ < /patches/0007-obs-backend-s
 RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0008-chore-obs-backend-build-dsc-script-add-eatmydata-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0009-obs-Add-deb-build-cmd-print.patch
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0010-feat-obs-worker-add-clientip-arg-support.patch
+RUN patch -p1 -d /usr/lib/obs/server/ < /patches/011-feat-Remove-backend-https-check.patch
 
 WORKDIR /srv/obs/
 
