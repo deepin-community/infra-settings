@@ -1,0 +1,39 @@
+From 0dd93ec608f932f6f81b406a7ef3a87d5cf0a733 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Mon, 5 Feb 2024 02:30:08 +0000
+Subject: [PATCH] feat: Remove backend https check
+
+sometimes use proxy add https support for backend
+---
+ BSServer.pm | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/BSServer.pm b/BSServer.pm
+index 85d0e45..e6bcd3d 100644
+--- a/BSServer.pm
++++ b/BSServer.pm
+@@ -347,14 +347,14 @@ sub server {
+   my $tossl;
+   my %tosslopts;
+ 
+-  if ($conf->{'proto'} && $conf->{'proto'} eq 'https') {
+-    die("need ssl_keyfile and ssl_certfile for https\n") unless $conf->{'ssl_keyfile'} && $conf->{'ssl_certfile'};
+-    require BSSSL;
+-    $tossl = \&BSSSL::tossl;
+-    my $verify = ref($conf->{'ssl_verify'}) eq 'HASH' ? $conf->{'ssl_verify'} : {};
+-    $tosslopts{'ctx'} = BSSSL::newctx('keyfile' => $conf->{'ssl_keyfile'}, 'certfile' => $conf->{'ssl_certfile'}, 'verify_file' => $verify->{'verify_file'}, 'verify_dir' => $verify->{'verify_dir'});
+-    $tosslopts{'verify'} = $verify->{'mode'} || '1' if $conf->{'ssl_verify'};
+-  }
++  #if ($conf->{'proto'} && $conf->{'proto'} eq 'https') {
++  #  die("need ssl_keyfile and ssl_certfile for https\n") unless $conf->{'ssl_keyfile'} && $conf->{'ssl_certfile'};
++  #  require BSSSL;
++  #  $tossl = \&BSSSL::tossl;
++  #  my $verify = ref($conf->{'ssl_verify'}) eq 'HASH' ? $conf->{'ssl_verify'} : {};
++  #  $tosslopts{'ctx'} = BSSSL::newctx('keyfile' => $conf->{'ssl_keyfile'}, 'certfile' => $conf->{'ssl_certfile'}, 'verify_file' => $verify->{'verify_file'}, 'verify_dir' => $verify->{'verify_dir'});
++  #  $tosslopts{'verify'} = $verify->{'mode'} || '1' if $conf->{'ssl_verify'};
++  #}
+   
+   if ($conf->{'serverstatus'} && !$serverstatus_ok) {
+     open(STA, '+>', $conf->{'serverstatus'}) || die("could not open $conf->{'serverstatus'}: $!\n");
+-- 
+2.35.3
