@@ -1,12 +1,5 @@
 #!/bin/bash
-# Config wireguard ip, need kernel support it
 set -x
-
-for f in $(cd /etc/wireguard && ls)
-do
-    wg=$(echo "$f" |awk -F '.' '{ print $1}')
-    wg-quick up $wg
-done
 
 # Start obs backend services
 starting() {
