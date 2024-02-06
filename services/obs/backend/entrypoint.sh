@@ -1,6 +1,13 @@
 #!/bin/bash
 set -x
 
+# link obs data directory for build and publish
+# /srv/obs-build-repos mount using separate storage, including the repos\build\jobs directory
+mkdir -p /srv/obs-build-repos/repos && ln -sf /srv/obs-build-repos/repos /srv/obs/repos
+mkdir -p /srv/obs-build-repos/repos && ln -sf /srv/obs-build-repos/build /srv/obs/build
+mkdir -p /srv/obs-build-repos/jobs && ln -sf /srv/obs-build-repos/jobs /srv/obs/jobs
+chown -R obsrun:obsrun /srv/obs-build-repos /srv/obs/build /srv/obs/jobs /srv/obs/repos
+
 # Start obs backend services
 starting() {
     /usr/lib/obs/server/bs_repserver --logfile rep_server.log &
