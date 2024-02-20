@@ -2,11 +2,11 @@
 set -x
 
 # link obs data directory for build and publish
-# /srv/obs-build-repos mount using separate storage, including the repos\build\jobs directory
-mkdir -p /srv/obs-build-repos/repos && ln -sf /srv/obs-build-repos/repos /srv/obs/repos
-mkdir -p /srv/obs-build-repos/repos && ln -sf /srv/obs-build-repos/build /srv/obs/build
-mkdir -p /srv/obs-build-repos/jobs && ln -sf /srv/obs-build-repos/jobs /srv/obs/jobs
-chown -R obsrun:obsrun /srv/obs-build-repos /srv/obs/build /srv/obs/jobs /srv/obs/repos
+# /srv/obs-datas mount using separate storage, including the repos\build\jobs directory
+mkdir -p /srv/obs-datas/repos && if [ ! -d "/srv/obs/repos" ];then ln -sf /srv/obs-datas/repos /srv/obs/repos;fi
+mkdir -p /srv/obs-datas/build && if [ ! -d "/srv/obs/build" ];then ln -sf /srv/obs-datas/build /srv/obs/build;fi
+mkdir -p /srv/obs-datas/jobs && if [ ! -d "/srv/obs/jobs" ];then ln -s /srv/obs-datas/jobs /srv/obs/jobs;fi
+chown -R obsrun:obsrun /srv/obs-datas /srv/obs/build /srv/obs/jobs /srv/obs/repos
 
 # Start obs backend services
 starting() {
