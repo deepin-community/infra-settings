@@ -1,0 +1,16 @@
+---
+# Obs storage
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: backend-datas
+  namespace: obs
+  labels:
+    app: backend-datas
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obsbackend"
+  resources:
+    requests:
+      storage: 2600Gi
