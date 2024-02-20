@@ -5,8 +5,13 @@ set -x
 # /srv/obs-datas mount using separate storage, including the repos\build\jobs directory
 mkdir -p /srv/obs-datas/repos && if [ ! -d "/srv/obs/repos" ];then ln -sf /srv/obs-datas/repos /srv/obs/repos;fi
 mkdir -p /srv/obs-datas/build && if [ ! -d "/srv/obs/build" ];then ln -sf /srv/obs-datas/build /srv/obs/build;fi
-mkdir -p /srv/obs-datas/jobs && if [ ! -d "/srv/obs/jobs" ];then ln -s /srv/obs-datas/jobs /srv/obs/jobs;fi
-chown -R obsrun:obsrun /srv/obs-datas /srv/obs/build /srv/obs/jobs /srv/obs/repos
+mkdir -p /srv/obs/jobs
+mkdir -p /srv/obs-datas/jobs/x86_64 && if [ ! -d "/srv/obs/jobs/x86_64" ];then ln -s /srv/obs-datas/jobs/x86_64 /srv/obs/jobs/x86_64;fi
+mkdir -p /srv/obs-datas/jobs/i386 && if [ ! -d "/srv/obs/jobs/i386" ];then ln -s /srv/obs-datas/jobs/i386 /srv/obs/jobs/i386;fi
+mkdir -p /srv/obs-datas/jobs/aarch64 && if [ ! -d "/srv/obs/jobs/aarch64" ];then ln -s /srv/obs-datas/jobs/aarch64 /srv/obs/jobs/aarch64;fi
+mkdir -p /srv/obs-datas/jobs/loong64 && if [ ! -d "/srv/obs/jobs/loong64" ];then ln -s /srv/obs-datas/jobs/loong64 /srv/obs/jobs/loong64;fi
+mkdir -p /srv/obs-datas/jobs/riscv64 && if [ ! -d "/srv/obs/jobs/riscv64" ];then ln -s /srv/obs-datas/jobs/riscv64 /srv/obs/jobs/riscv64;fi
+chown -R obsrun:obsrun /srv/obs/jobs
 
 # Start obs backend services
 starting() {
