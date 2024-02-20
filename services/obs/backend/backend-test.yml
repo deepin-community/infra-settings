@@ -58,14 +58,14 @@ data:
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://172.25.6.1:30352";
-    our $reposerver = "http://backend-test:5252";
-    our $serviceserver = "http://172.25.6.1:30152";
+    our $srcserver = "http://220.202.18.3:30352";
+    our $reposerver = "http://obs-backend-test.cicd.getdeepin.org";
+    #our $serviceserver = "http://10.20.64.72:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://backend-test:30352";
-    our $workerreposerver = "http://backend-test:5252";
+    our $workersrcserver = "http://220.202.18.3:30352";
+    our $workerreposerver = "http://obs-backend-test.cicd.getdeepin.org";
 
     #our $servicedir = "/usr/lib/obs/service/";
     #our $servicetempdir = "/srv/obs/service";
@@ -814,32 +814,6 @@ data:
     </configuration>
 
 ---
-# Obs Backend Xml Config ConfigMap
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: obs
-  name: wg0-test
-data:
-  wg0.conf: |
-    [Interface]
-    PrivateKey =
-    Address =
-    ListenPort =
-
-    [Peer]
-    PublicKey =
-    Endpoint =
-    AllowedIPs =
-    PersistentKeepalive = 25
-
-    [Peer]
-    PublicKey =
-    Endpoint =
-    AllowedIPs =
-    PersistentKeepalive = 25
-
----
 # Obs Backend Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -857,19 +831,8 @@ spec:
         app: obs-test
     spec:
       nodeSelector:
-        nettype: optical-fiber
+        kubernetes.io/arch: amd64
       containers:
-      - name: nginx-src
-        image: nginx:latest
-        ports:
-        - name: src
-          containerPort: 30352
-        volumeMounts:
-        - name: nginx-obssrc
-          mountPath: /etc/nginx/conf.d/default.conf
-          subPath: obssrc.conf
-        - name: src-cache
-          mountPath: /cache
       - name: backend-test
         image: hub.deepin.com/k3s/obs/backend:test
         imagePullPolicy: Always
@@ -885,17 +848,11 @@ spec:
           subPath: obs-server
         - name: backend-data
           mountPath: /srv/obs
+        - name: backend-datas
+          mountPath: /srv/obs-datas
         - name: backend-xml-config-test
           mountPath: /srv/obs/configuration.xml
           subPath: configuration.xml
-        - name: wg0-test
-          mountPath: /etc/wireguard/wg0.conf
-          subPath: wg0.conf
-        securityContext:
-          privileged: true
-          capabilities:
-            add:
-              - NET_ADMIN
       volumes:
       - name: backend-config-test
         configMap:
@@ -912,27 +869,15 @@ spec:
       - name: backend-data
         persistentVolumeClaim:
           claimName: backend-test
+      - name: backend-datas
+        persistentVolumeClaim:
+          claimName: backend-datas
       - name: backend-xml-config-test
         configMap:
           name: backend-xml-config-test
           items:
           - key: configuration.xml
             path: configuration.xml
-      - name: wg0-test
-        configMap:
-          name: wg0-test
-          items:
-          - key: wg0.conf
-            path: wg0.conf
-      - name: nginx-obssrc
-        configMap:
-          name: nginx-obssrc
-          items:
-          - key: obssrc.conf
-            path: obssrc.conf
-      - name: src-cache
-        persistentVolumeClaim:
-          claimName: src-cache
       hostname: backend-test
       imagePullSecrets:
       - name: deepinhub
@@ -952,8 +897,27 @@ spec:
     protocol: TCP
     port: 5252
     targetPort: 5252
-  - name: src
-    protocol: TCP
-    port: 30352
-    targetPort: 30352
   type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/name: backend-test
+  name: backend-test
+  namespace: obs
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: obs-backend-test.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: backend-test
+                port:
+                  number: 5252
+            path: /
+            pathType: Prefix
