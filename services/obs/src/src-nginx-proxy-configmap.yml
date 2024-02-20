@@ -19,7 +19,7 @@ data:
               proxy_cache_lock on;
               proxy_cache_background_update on;
               proxy_cache_use_stale error timeout updating http_503;
-              proxy_pass http://172.25.6.1:30352;
+              proxy_pass http://220.202.18.3:30352;
         }
         add_header X-Cache-Status1 $upstream_cache_status;
     }
