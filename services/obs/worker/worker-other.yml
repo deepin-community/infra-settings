@@ -647,7 +647,7 @@ metadata:
   namespace: obs
   name: k3s-worker-other-amd
 spec:
-  replicas: 16
+  replicas: 60
   selector:
     matchLabels:
       app: worker-other-amd
@@ -713,7 +713,7 @@ metadata:
   namespace: obs
   name: k3s-worker-other-arm
 spec:
-  replicas: 16
+  replicas: 60
   selector:
     matchLabels:
       app: worker-other-arm
