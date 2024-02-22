@@ -38,16 +38,12 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 172.25.6.16; # FQDN of the WebUI/API server if it's not $hostname
-    my $src = 172.25.6.1;
+    # my $frontend = 172.25.6.16; # FQDN of the WebUI/API server if it's not $hostname
+    # my $src = 172.25.6.1;
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
       '.*' => 'rw',   # Permit IP of FQDN
-      '^127\..*' => 'rw', # only the localhost can write to the backend
-      "^10.20.64.*" => 'rw',   # Permit IP of FQDN
-      "^$ip\$" => 'rw',   # Permit IP of FQDN
-      "^100.64.0.*" => 'rw',
       "^10.42.*" => 'rw',
       "^172.25.6.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
@@ -57,19 +53,19 @@ data:
     if ($frontend) {
       my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
       $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
-      # my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
-      # $ipaccess->{$srcip} = 'rw' ;
+      my $srtestp = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
+      $ipaccess->{$srtestp} = 'rw' ;
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://172.25.6.1:30352";
-    our $reposerver = "http://10.20.64.41:31262";
-    our $serviceserver = "http://172.25.6.1:30152";
+    our $srcserver = "http://10.20.64.72:5352";
+    our $reposerver = "http://obs-backend-other.cicd.getdeepin.org";
+    #our $serviceserver = "http://10.20.64.72:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://10.20.64.41:31362";
-    our $workerreposerver = "http://10.20.64.41:31262";
+    our $workersrcserver = "http://10.20.64.72:5352";
+    our $workerreposerver = "http://obs-backend-other.cicd.getdeepin.org";
 
     #our $servicedir = "/usr/lib/obs/service/";
     #our $servicetempdir = "/srv/obs/service";
@@ -164,7 +160,7 @@ data:
     "sparc64" => "sparcv9",
     };
 
-    our $redisserver = "redis://172.25.3.1:6379";
+    our $redisserver = "redis://src:6379";
 
     #No extra stage server sync
     #our $stageserver = 'rsync://127.0.0.1/put-repos-main';
@@ -804,46 +800,21 @@ data:
       <gravatar>on</gravatar>
       <enforce_project_keys>off</enforce_project_keys>
       <download_on_demand>on</download_on_demand>
-      <download_url>https://ci.deepin.org/repo/obs</download_url>
+      <download_url>https://other.deepin.org/repo/obs</download_url>
       <obs_url>https://build.deepin.org</obs_url>
       <admin_email>packages@deepin.org</admin_email>
       <cleanup_empty_projects>on</cleanup_empty_projects>
       <disable_publish_for_branches>on</disable_publish_for_branches>
       <schedulers>
+        <arch>i386</arch>
         <arch>aarch64</arch>
         <arch>x86_64</arch>
-        <arch>loong64</arch>
         <arch>riscv64</arch>
+        <arch>loong64</arch>
       </schedulers>
       <unlisted_projects_filter>^home:.+</unlisted_projects_filter>
       <unlisted_projects_filter_description>home projects</unlisted_projects_filter_description>
     </configuration>
-
----
-# Obs Backend Xml Config ConfigMap
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: obs
-  name: wg0-other
-data:
-  wg0.conf: |
-    [Interface]
-    PrivateKey =
-    Address = 172.25.6.16/24
-    ListenPort = 51820
-
-    [Peer]
-    PublicKey =
-    Endpoint = 10.20.64.72:51820
-    AllowedIPs = 172.25.6.2/32
-    PersistentKeepalive = 25
-
-    [Peer]
-    PublicKey =
-    Endpoint =
-    AllowedIPs = 172.25.6.1/32
-    PersistentKeepalive = 25
 
 ---
 # Obs Backend Deployment
@@ -863,25 +834,14 @@ spec:
         app: obs-other
     spec:
       nodeSelector:
-        nettype: optical-fiber
+        kubernetes.io/arch: amd64
       containers:
-      - name: nginx-src
-        image: nginx:latest
-        ports:
-        - name: src
-          containerPort: 30352
-        volumeMounts:
-        - name: nginx-obssrc
-          mountPath: /etc/nginx/conf.d/default.conf
-          subPath: obssrc.conf
-        - name: src-cache
-          mountPath: /cache
       - name: backend-other
-        image: hub.deepin.com/k3s/obs/backend:latest
+        image: hub.deepin.com/k3s/obs/backend:test
         imagePullPolicy: Always
         ports:
         - name: backend-other
-          containerPort: 31262
+          containerPort: 5252
         volumeMounts:
         - name: backend-config-other
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -891,17 +851,11 @@ spec:
           subPath: obs-server
         - name: backend-data
           mountPath: /srv/obs
+        - name: backend-datas
+          mountPath: /srv/obs-datas
         - name: backend-xml-config-other
           mountPath: /srv/obs/configuration.xml
           subPath: configuration.xml
-        - name: wg0-other
-          mountPath: /etc/wireguard/wg0.conf
-          subPath: wg0.conf
-        securityContext:
-          privileged: true
-          capabilities:
-            add:
-              - NET_ADMIN
       volumes:
       - name: backend-config-other
         configMap:
@@ -918,27 +872,15 @@ spec:
       - name: backend-data
         persistentVolumeClaim:
           claimName: backend-other
+      - name: backend-datas
+        persistentVolumeClaim:
+          claimName: backend-datas
       - name: backend-xml-config-other
         configMap:
           name: backend-xml-config-other
           items:
           - key: configuration.xml
             path: configuration.xml
-      - name: wg0-other
-        configMap:
-          name: wg0-other
-          items:
-          - key: wg0.conf
-            path: wg0.conf
-      - name: nginx-obssrc
-        configMap:
-          name: nginx-obssrc
-          items:
-          - key: obssrc.conf
-            path: obssrc.conf
-      - name: src-cache
-        persistentVolumeClaim:
-          claimName: src-cache
       hostname: backend-other
       imagePullSecrets:
       - name: deepinhub
@@ -953,16 +895,32 @@ metadata:
 spec:
   selector:
     app: obs-other
-  externalTrafficPolicy: Local
   ports:
   - name: backend-other
     protocol: TCP
-    port: 31262
-    targetPort: 31262
-    nodePort: 31262
-  - name: src
-    protocol: TCP
-    port: 30352
-    targetPort: 30352
-    nodePort: 31362
-  type: NodePort
+    port: 5252
+    targetPort: 5252
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/name: backend-other
+  name: backend-other
+  namespace: obs
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: obs-backend-other.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: backend-other
+                port:
+                  number: 5252
+            path: /
+            pathType: Prefix
