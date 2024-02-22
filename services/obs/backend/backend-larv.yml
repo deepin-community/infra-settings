@@ -38,15 +38,12 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 172.25.6.13; # FQDN of the WebUI/API server if it's not $hostname
-    my $src = 172.25.6.1;
+    # my $frontend = 172.25.6.13; # FQDN of the WebUI/API server if it's not $hostname
+    # my $src = 172.25.6.1;
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
       '.*' => 'rw',   # Permit IP of FQDN
-      '^127\..*' => 'rw', # only the localhost can write to the backend
-      "^10.20.64.*" => 'rw',   # Permit IP of FQDN
-      "^$ip\$" => 'rw',   # Permit IP of FQDN
       "^10.42.*" => 'rw',
       "^172.25.6.*" => 'rw',
       '.*' => 'worker',   # build results can be delivered from any client in the network
@@ -56,19 +53,19 @@ data:
     if ($frontend) {
       my $frontendip = quotemeta inet_ntoa(inet_aton($frontend) || inet_aton("localhost"));
       $ipaccess->{$frontendip} = 'rw' ; # in dotted.quad format
-      # my $srcip = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
-      # $ipaccess->{$srcip} = 'rw' ;
+      my $srtestp = quotemeta inet_ntoa(inet_aton($src) || inet_aton("localhost"));
+      $ipaccess->{$srtestp} = 'rw' ;
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://172.25.6.1:30352";
-    our $reposerver = "http://10.20.64.41:31252";
-    our $serviceserver = "http://172.25.6.1:30152";
+    our $srcserver = "http://10.20.64.72:5352";
+    our $reposerver = "http://obs-backend-larv.cicd.getdeepin.org";
+    #our $serviceserver = "http://10.20.64.72:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://10.20.64.41:31352";
-    our $workerreposerver = "http://10.20.64.41:31252";
+    our $workersrcserver = "http://10.20.64.72:5352";
+    our $workerreposerver = "http://obs-backend-larv.cicd.getdeepin.org";
 
     #our $servicedir = "/usr/lib/obs/service/";
     #our $servicetempdir = "/srv/obs/service";
@@ -163,7 +160,7 @@ data:
     "sparc64" => "sparcv9",
     };
 
-    our $redisserver = "redis://172.25.3.1:6379";
+    our $redisserver = "redis://src:6379";
 
     #No extra stage server sync
     #our $stageserver = 'rsync://127.0.0.1/put-repos-main';
@@ -370,7 +367,7 @@ data:
     #
     # An empty setting will point to localhost:5352 by default
     #
-    OBS_SRC_SERVER="10.20.64.41:31353"
+    OBS_SRC_SERVER=""
 
     ## Path:        Applications/OBS
     ## Description: define repository server host to be used
@@ -380,7 +377,7 @@ data:
     #
     # An empty setting will point to localhost:5252 by default
     #
-    OBS_REPO_SERVERS="10.20.64.41:31253"
+    OBS_REPO_SERVERS=""
 
     ## Path:        Applications/OBS
     ## Description: define number of build instances
@@ -803,7 +800,7 @@ data:
       <gravatar>on</gravatar>
       <enforce_project_keys>off</enforce_project_keys>
       <download_on_demand>on</download_on_demand>
-      <download_url>https://ci.deepin.org/repo/obs</download_url>
+      <download_url>https://larv.deepin.org/repo/obs</download_url>
       <obs_url>https://build.deepin.org</obs_url>
       <admin_email>packages@deepin.org</admin_email>
       <cleanup_empty_projects>on</cleanup_empty_projects>
@@ -815,32 +812,6 @@ data:
       <unlisted_projects_filter>^home:.+</unlisted_projects_filter>
       <unlisted_projects_filter_description>home projects</unlisted_projects_filter_description>
     </configuration>
-
----
-# Obs Backend Xml Config ConfigMap
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: obs
-  name: wg0-larv
-data:
-  wg0.conf: |
-    [Interface]
-    PrivateKey =
-    Address =
-    ListenPort =
-
-    [Peer]
-    PublicKey = 
-    Endpoint =
-    AllowedIPs =
-    PersistentKeepalive = 25
-
-    [Peer]
-    PublicKey =
-    Endpoint =
-    AllowedIPs =
-    PersistentKeepalive = 25
 
 ---
 # Obs Backend Deployment
@@ -859,28 +830,15 @@ spec:
       labels:
         app: obs-larv
     spec:
-      #Only one node used to run loongarch and riscv backend
       nodeSelector:
-        larv: 'yes'
-        nettype: optical-fiber
+        kubernetes.io/arch: amd64
       containers:
-      - name: nginx-src
-        image: nginx:latest
-        ports:
-        - name: src
-          containerPort: 30352
-        volumeMounts:
-        - name: nginx-obssrc
-          mountPath: /etc/nginx/conf.d/default.conf
-          subPath: obssrc.conf
-        - name: src-cache
-          mountPath: /cache
       - name: backend-larv
-        image: hub.deepin.com/k3s/obs/backend:latest
+        image: hub.deepin.com/k3s/obs/backend:test
         imagePullPolicy: Always
         ports:
         - name: backend-larv
-          containerPort: 31252
+          containerPort: 5252
         volumeMounts:
         - name: backend-config-larv
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -890,58 +848,36 @@ spec:
           subPath: obs-server
         - name: backend-data
           mountPath: /srv/obs
+        - name: backend-datas
+          mountPath: /srv/obs-datas
         - name: backend-xml-config-larv
           mountPath: /srv/obs/configuration.xml
           subPath: configuration.xml
-        - name: wg0-larv
-          mountPath: /etc/wireguard/wg0.conf
-          subPath: wg0.conf
-        securityContext:
-          privileged: true
-          capabilities:
-            add:
-              - NET_ADMIN
       volumes:
       - name: backend-config-larv
         configMap:
           name: backend-config-larv
-          defaultMode: 420
           items:
           - key: BSConfig.pm
             path: BSConfig.pm
       - name: backend-server-config-larv
         configMap:
           name: backend-server-config-larv
-          defaultMode: 420
           items:
           - key: obs-server
             path: obs-server
       - name: backend-data
         persistentVolumeClaim:
           claimName: backend-larv
+      - name: backend-datas
+        persistentVolumeClaim:
+          claimName: backend-datas
       - name: backend-xml-config-larv
         configMap:
           name: backend-xml-config-larv
-          defaultMode: 420
           items:
           - key: configuration.xml
             path: configuration.xml
-      - name: wg0-larv
-        configMap:
-          name: wg0-larv
-          defaultMode: 420
-          items:
-          - key: wg0.conf
-            path: wg0.conf
-      - name: nginx-obssrc
-        configMap:
-          name: nginx-obssrc
-          items:
-          - key: obssrc.conf
-            path: obssrc.conf
-      - name: src-cache
-        persistentVolumeClaim:
-          claimName: src-cache
       hostname: backend-larv
       imagePullSecrets:
       - name: deepinhub
@@ -959,54 +895,29 @@ spec:
   ports:
   - name: backend-larv
     protocol: TCP
-    port: 31252
-    targetPort: 31252
-    nodePort: 31252
-  - name: src
-    protocol: TCP
-    port: 30352
-    targetPort: 30352
-    nodePort: 31352
-  # Use Node port to export backend ports
-  type: NodePort
+    port: 5252
+    targetPort: 5252
+  type: ClusterIP
 
 ---
-# Obs Backend Ingress
-  # Todo: Need to fix client real ip is incorrect:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/name: backend-larv
+  name: backend-larv
   namespace: obs
-  name: obs
-  annotations:
-    # Change this to your issuer when using cert-manager. Does
-    # nothing when not using cert-manager.
-    cert-manager.io/cluster-issuer: letsencrypt-staging
 spec:
-  defaultBackend:
-    # specify the default backend for `ingress-gce` (https://cloud.google.com/kubernetes-engine/docs/concepts/ingress#default_backend)
-    service:
-      name: backend-larv
-      port:
-        number: 31252
+  ingressClassName: traefik
   rules:
-  - host: obs-backend-larv.deepin.org
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: backend-larv
-            port:
-              number: 31252
-  - host: obs-src-larv.deepin.org
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: backend-larv
-            port:
-              number: 30352
+    - host: obs-backend-larv.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: backend-larv
+                port:
+                  number: 5252
+            path: /
+            pathType: Prefix
