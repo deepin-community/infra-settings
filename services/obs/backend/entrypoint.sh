@@ -6,7 +6,7 @@ set -x
 mkdir -p /srv/obs-datas/repos && if [ ! -d "/srv/obs/repos" ];then ln -sf /srv/obs-datas/repos /srv/obs/repos;fi
 mkdir -p /srv/obs-datas/build && if [ ! -d "/srv/obs/build" ];then ln -sf /srv/obs-datas/build /srv/obs/build;fi
 mkdir -p /srv/obs-datas/jobs/$(hostname) && if [ ! -d "/srv/obs/jobs" ];then ln -s /srv/obs-datas/jobs/$(hostname) /srv/obs/jobs;fi
-chown -R obsrun:obsrun /srv/obs/jobs
+chown -R obsrun:obsrun /srv/obs/jobs /srv/obs-datas/jobs/$(hostname)
 
 # Start obs backend services
 starting() {
