@@ -29,6 +29,8 @@ stop() {
 }
 
 # For auto restart
+/usr/sbin/logrotate /etc/logrotate.conf
+cron -n &
 while true
 do
     starting
