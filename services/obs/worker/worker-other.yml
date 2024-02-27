@@ -510,7 +510,7 @@ data:
     #
     #
 
-    OBS_REPO_SERVERS="http://backend-other:31262"
+    OBS_REPO_SERVERS="http://backend-other:5252"
 
     ## Path:        Applications/OBS
     ## Description: define number of build instances
