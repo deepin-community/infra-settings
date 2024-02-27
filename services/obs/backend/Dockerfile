@@ -40,6 +40,12 @@ RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0009-obs-Add-deb-build-cm
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0010-feat-obs-worker-add-clientip-arg-support.patch
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/011-feat-Remove-backend-https-check.patch
 
+# add crontab support
+RUN https_proxy=http://10.20.52.80:7890 zypper install -y cron
+COPY backend/crontab /etc/cron.d/crontab
+COPY backend/cron-tasks.sh /cron-tasks.sh
+RUN chmod +x /cron-tasks.sh
+
 WORKDIR /srv/obs/
 
 VOLUME [ "/srv/obs/" ]
