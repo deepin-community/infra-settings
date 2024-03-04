@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: server-config-ci
+  name: server-config-ci-large
 data:
   obs-server: |
     #
@@ -151,10 +151,10 @@ data:
     ## Default:     ""
     ## Config:      OBS
     #
-    # A label can be used to build specific packages only on dedicated hosts.
+    # A label can be used to build speci-largefic packages only on dedicated hosts.
     # For example for benchmarking.
     #
-    # OBS_WORKER_HOSTLABELS=""
+    OBS_WORKER_HOSTLABELS="$NODENAME"
 
     ## Path:        Applications/OBS
     ## Description: can be used to define a security level of the worker
@@ -239,7 +239,7 @@ data:
     # for KVM, you have to create with (example for openSUSE 11.2):
     #
     # export rootfstype="ext4"
-    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_pci virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
+    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_pci-large virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
     #
     # a working initrd file which includes virtio and binfmt_misc for OBS in order to work fine
     #
@@ -487,7 +487,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: worker-config-ci
+  name: worker-config-ci-large
 data:
   obs-worker: |
     # Nice level
@@ -520,7 +520,7 @@ data:
     #
     # 0 instances will automatically use the number of CPU's
 
-    OBS_WORKER_INSTANCES="3"
+    OBS_WORKER_INSTANCES="1"
 
     ## Path:        Applications/OBS
     ## Description: The base directory, where sub directories for each worker will get created
@@ -550,7 +550,7 @@ data:
     #
     # this maps usually to "make -j1" during build
     #
-    OBS_WORKER_JOBS="16"
+    OBS_WORKER_JOBS="64"
 
     ## Path:        Applications/OBS
     ## Description: Run in test mode (build results will be ignore, no job blocking)
@@ -635,7 +635,7 @@ data:
     #OBS_VM_KERNEL="/srv/obs/worker/vmlinuz-5.3.18-57-default"
     #OBS_VM_INITRD="/srv/obs/worker/initrd-5.3.18-57-default"
 
-    OBS_WORKER_HOSTLABELS="$NODENAME"
+    #OBS_WORKER_HOSTLABELS="deepinci-large-amd1"
     #OBS_VM_USE_TMPFS="yes"
     #OBS_WORKER_TEST_MODE="yes"
 
@@ -645,42 +645,40 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: obs
-  name: k3s-worker-ci-amd
+  name: k3s-worker-ci-large-amd
 spec:
-  replicas: 30
+  replicas: 1
   selector:
     matchLabels:
-      app: worker-ci-amd
+      app: worker-ci-large-amd
   template:
     metadata:
       labels:
-        app: worker-ci-amd
+        app: worker-ci-large-amd
     spec:
       nodeSelector:
         kubernetes.io/arch: amd64
       containers:
-      - name: k3s-worker-ci-amd
-        image: hub.deepin.com/k3s/obs/worker:amd64
+      - name: k3s-worker-ci-large-amd
+        image: hub.deepin.com/k3s/obs/worker:latest
         imagePullPolicy: Always
         env:
         - name: NODENAME
           valueFrom:
             fieldRef:
-              apiVersion: v1
               fieldPath: spec.nodeName
-        - name: NODENAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: spec.nodeName
+        resources:
+          requests:
+            cpu: '64'
+            memory: 65536Mi
         volumeMounts:
-        - name: server-config-ci
+        - name: server-config-ci-large
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
-        - name: worker-config-ci
+        - name: worker-config-ci-large
           mountPath: /etc/sysconfig/obs-worker
           subPath: obs-worker
-        - name: worker-data-ci
+        - name: worker-data-ci-large
           mountPath: /srv/obs
         - name: worker-cache
           mountPath: /srv/obscache
@@ -690,19 +688,19 @@ spec:
             add:
               - NET_ADMIN
       volumes:
-      - name: server-config-ci
+      - name: server-config-ci-large
         configMap:
-          name: server-config-ci
+          name: server-config-ci-large
           items:
           - key: obs-server
             path: obs-server
-      - name: worker-config-ci
+      - name: worker-config-ci-large
         configMap:
-          name: worker-config-ci
+          name: worker-config-ci-large
           items:
           - key: obs-worker
             path: obs-worker
-      - name: worker-data-ci
+      - name: worker-data-ci-large
         emptyDir: {}
       - name: worker-cache
         hostPath:
@@ -717,42 +715,40 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: obs
-  name: k3s-worker-ci-arm
+  name: k3s-worker-ci-large-arm
 spec:
-  replicas: 30
+  replicas: 1
   selector:
     matchLabels:
-      app: worker-ci-arm
+      app: worker-ci-large-arm
   template:
     metadata:
       labels:
-        app: worker-ci-arm
+        app: worker-ci-large-arm
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
       containers:
-      - name: k3s-worker-ci-arm
-        image: hub.deepin.com/k3s/obs/worker:arm64
+      - name: k3s-worker-ci-large-arm
+        image: hub.deepin.com/k3s/obs/worker:arm64-latest
         imagePullPolicy: Always
         env:
         - name: NODENAME
           valueFrom:
             fieldRef:
-              apiVersion: v1
               fieldPath: spec.nodeName
-        - name: NODENAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: spec.nodeName
+        resources:
+          requests:
+            cpu: '64'
+            memory: 65536Mi
         volumeMounts:
-        - name: server-config-ci
+        - name: server-config-ci-large
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
-        - name: worker-config-ci
+        - name: worker-config-ci-large
           mountPath: /etc/sysconfig/obs-worker
           subPath: obs-worker
-        - name: worker-data-ci
+        - name: worker-data-ci-large
           mountPath: /srv/obs
         - name: worker-cache
           mountPath: /srv/obscache
@@ -762,19 +758,19 @@ spec:
             add:
               - NET_ADMIN
       volumes:
-      - name: server-config-ci
+      - name: server-config-ci-large
         configMap:
-          name: server-config-ci
+          name: server-config-ci-large
           items:
           - key: obs-server
             path: obs-server
-      - name: worker-config-ci
+      - name: worker-config-ci-large
         configMap:
-          name: worker-config-ci
+          name: worker-config-ci-large
           items:
           - key: obs-worker
             path: obs-worker
-      - name: worker-data-ci
+      - name: worker-data-ci-large
         emptyDir: {}
       - name: worker-cache
         hostPath:
