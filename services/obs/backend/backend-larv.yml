@@ -58,13 +58,13 @@ data:
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://10.20.64.72:5352";
+    our $srcserver = "http://obs-src.cicd.getdeepin.org";
     our $reposerver = "http://obs-backend-larv.cicd.getdeepin.org";
     #our $serviceserver = "http://10.20.64.72:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://10.20.64.72:5352";
+    our $workersrcserver = "http://obs-src.cicd.getdeepin.org";
     our $workerreposerver = "http://obs-backend-larv.cicd.getdeepin.org";
 
     #our $servicedir = "/usr/lib/obs/service/";
@@ -218,6 +218,12 @@ data:
     # our $partitionservers = { 'home' => 'http://home-backend-server:5252',
     #                           'main' => 'http://main-backend-server:5252',
     #                         };
+
+    # Publish hooks
+    our $publishedhook_use_regex = 1;
+    our $publishedhook = {
+      "home:golf66/*" => "/usr/local/bin/publish-hook.sh",
+    };
 
     # host specific configs
     my $hostconfig = __FILE__;
@@ -834,10 +840,10 @@ spec:
         kubernetes.io/arch: amd64
       containers:
       - name: backend-larv
-        image: hub.deepin.com/k3s/obs/backend:test
+        image: hub.deepin.com/k3s/obs/backend:latest
         imagePullPolicy: Always
         ports:
-        - name: backend-larv
+        - name: backend-port
           containerPort: 5252
         volumeMounts:
         - name: backend-config-larv
@@ -846,13 +852,14 @@ spec:
         - name: backend-server-config-larv
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
-        - name: backend-data
-          mountPath: /srv/obs
         - name: backend-datas
           mountPath: /srv/obs-datas
         - name: backend-xml-config-larv
-          mountPath: /srv/obs/configuration.xml
+          mountPath: /srv/configuration.xml
           subPath: configuration.xml
+        - name: backend-repo-rsync-hook
+          mountPath: /usr/local/bin/publish-hook.sh
+          subPath: publish-hook.sh
       volumes:
       - name: backend-config-larv
         configMap:
@@ -866,9 +873,6 @@ spec:
           items:
           - key: obs-server
             path: obs-server
-      - name: backend-data
-        persistentVolumeClaim:
-          claimName: backend-larv
       - name: backend-datas
         persistentVolumeClaim:
           claimName: backend-datas
@@ -878,6 +882,13 @@ spec:
           items:
           - key: configuration.xml
             path: configuration.xml
+      - name: backend-repo-rsync-hook
+        configMap:
+          name: backend-repo-rsync-hook
+          defaultMode: 493
+          items:
+          - key: publish-hook.sh
+            path: publish-hook.sh
       hostname: backend-larv
       imagePullSecrets:
       - name: deepinhub
@@ -893,7 +904,7 @@ spec:
   selector:
     app: obs-larv
   ports:
-  - name: backend-larv
+  - name: backend-port
     protocol: TCP
     port: 5252
     targetPort: 5252

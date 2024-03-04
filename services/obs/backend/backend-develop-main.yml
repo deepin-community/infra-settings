@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: backend-config-ci
+  name: backend-config-develop-main
 data:
   BSConfig.pm: |
     #
@@ -59,13 +59,13 @@ data:
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
     our $srcserver = "http://obs-src.cicd.getdeepin.org";
-    our $reposerver = "http://obs-backend-ci.cicd.getdeepin.org";
+    our $reposerver = "http://obs-backend-develop-main.cicd.getdeepin.org";
     #our $serviceserver = "http://10.20.64.72:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
     our $workersrcserver = "http://obs-src.cicd.getdeepin.org";
-    our $workerreposerver = "http://obs-backend-ci.cicd.getdeepin.org";
+    our $workerreposerver = "http://obs-backend-develop-main.cicd.getdeepin.org";
 
     #our $servicedir = "/usr/lib/obs/service/";
     #our $servicetempdir = "/srv/obs/service";
@@ -207,7 +207,7 @@ data:
     #
     # This repo service is the 'home' server for all home:* projects. This and the
     # $reposerver setting must be different on the binary backend servers.
-    our $partition = 'backend-ci';
+    our $partition = 'backend-develop-main';
     #
     # this defines how the projects are split. All home: projects are hosted
     # on an own server in this example. Order is important.
@@ -222,7 +222,7 @@ data:
     # Publish hooks
     our $publishedhook_use_regex = 1;
     our $publishedhook = {
-      "deepin:CI/*" => "/usr/local/bin/publish-hook.sh",
+      "deepin:Develop:main/*" => "/usr/local/bin/publish-hook.sh",
     };
 
     # host specific configs
@@ -305,7 +305,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: backend-server-config-ci
+  name: backend-server-config-develop-main
 data:
   obs-server: |
     #
@@ -788,7 +788,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: backend-xml-config-ci
+  name: backend-xml-config-develop-main
 data:
   configuration.xml: |
     <configuration>
@@ -806,7 +806,7 @@ data:
       <gravatar>on</gravatar>
       <enforce_project_keys>off</enforce_project_keys>
       <download_on_demand>on</download_on_demand>
-      <download_url>https://ci.deepin.org/repo/obs</download_url>
+      <download_url>https://develop-main.deepin.org/repo/obs</download_url>
       <obs_url>https://build.deepin.org</obs_url>
       <admin_email>packages@deepin.org</admin_email>
       <cleanup_empty_projects>on</cleanup_empty_projects>
@@ -828,60 +828,60 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: obs
-  name: backend-ci
+  name: backend-develop-main
 spec:
   replicas: 1 # only 1
   selector:
     matchLabels:
-      app: obs-ci
+      app: obs-develop-main
   template:
     metadata:
       labels:
-        app: obs-ci
+        app: obs-develop-main
     spec:
       nodeSelector:
         kubernetes.io/arch: amd64
       containers:
-      - name: backend-ci
+      - name: backend-develop-main
         image: hub.deepin.com/k3s/obs/backend:latest
         imagePullPolicy: Always
         ports:
         - name: backend-port
           containerPort: 5252
         volumeMounts:
-        - name: backend-config-ci
+        - name: backend-config-develop-main
           mountPath: /usr/lib/obs/server/BSConfig.pm
           subPath: BSConfig.pm
-        - name: backend-server-config-ci
+        - name: backend-server-config-develop-main
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
         - name: backend-datas
           mountPath: /srv/obs-datas
-        - name: backend-xml-config-ci
+        - name: backend-xml-config-develop-main
           mountPath: /srv/configuration.xml
           subPath: configuration.xml
         - name: backend-repo-rsync-hook
           mountPath: /usr/local/bin/publish-hook.sh
           subPath: publish-hook.sh
       volumes:
-      - name: backend-config-ci
+      - name: backend-config-develop-main
         configMap:
-          name: backend-config-ci
+          name: backend-config-develop-main
           items:
           - key: BSConfig.pm
             path: BSConfig.pm
-      - name: backend-server-config-ci
+      - name: backend-server-config-develop-main
         configMap:
-          name: backend-server-config-ci
+          name: backend-server-config-develop-main
           items:
           - key: obs-server
             path: obs-server
       - name: backend-datas
         persistentVolumeClaim:
           claimName: backend-datas
-      - name: backend-xml-config-ci
+      - name: backend-xml-config-develop-main
         configMap:
-          name: backend-xml-config-ci
+          name: backend-xml-config-develop-main
           items:
           - key: configuration.xml
             path: configuration.xml
@@ -892,7 +892,7 @@ spec:
           items:
           - key: publish-hook.sh
             path: publish-hook.sh
-      hostname: backend-ci
+      hostname: backend-develop-main
       imagePullSecrets:
       - name: deepinhub
 
@@ -902,10 +902,10 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: obs
-  name: backend-ci
+  name: backend-develop-main
 spec:
   selector:
-    app: obs-ci
+    app: obs-develop-main
   ports:
   - name: backend-port
     protocol: TCP
@@ -919,18 +919,18 @@ kind: Ingress
 metadata:
   annotations: {}
   labels:
-    k8s.kuboard.cn/name: backend-ci
-  name: backend-ci
+    k8s.kuboard.cn/name: backend-develop-main
+  name: backend-develop-main
   namespace: obs
 spec:
   ingressClassName: traefik
   rules:
-    - host: obs-backend-ci.cicd.getdeepin.org
+    - host: obs-backend-develop-main.cicd.getdeepin.org
       http:
         paths:
           - backend:
               service:
-                name: backend-ci
+                name: backend-develop-main
                 port:
                   number: 5252
             path: /

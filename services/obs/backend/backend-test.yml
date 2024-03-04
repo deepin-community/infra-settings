@@ -38,8 +38,8 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = 172.25.6.13; # FQDN of the WebUI/API server if it's not $hostname
-    my $src = 172.25.6.1;
+    # my $frontend = 172.25.6.13; # FQDN of the WebUI/API server if it's not $hostname
+    # my $src = 172.25.6.1;
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
     our $ipaccess = {
@@ -58,13 +58,13 @@ data:
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://220.202.18.3:30352";
+    our $srcserver = "http://obs-src.cicd.getdeepin.org";
     our $reposerver = "http://obs-backend-test.cicd.getdeepin.org";
     #our $serviceserver = "http://10.20.64.72:5152";
     #our $clouduploadserver = "http://$hostname:5452"; 
 
     # you can use different ports for worker connections
-    our $workersrcserver = "http://220.202.18.3:30352";
+    our $workersrcserver = "http://obs-src.cicd.getdeepin.org";
     our $workerreposerver = "http://obs-backend-test.cicd.getdeepin.org";
 
     #our $servicedir = "/usr/lib/obs/service/";
@@ -130,7 +130,7 @@ data:
     # "ppc64" => [ "openSUSE:Factory", "FATE" ],
     #};
 
-    # optional: allow seperation of releasnumber syntestng per architecture
+    # optional: allow seperation of releasnumber syncing per architecture
     # one counter pool for all ppc architectures, one for i586/x86_64,
     # arm archs are seperated and one for the rest in this example
     our $relsync_pool = {
@@ -179,7 +179,7 @@ data:
     #our $keyfile = '/srv/obs/openSUSE-Build-Service.asc';
     #our $gpg_standard_key = "/etc/obs-default-gpg.asc";
 
-    # Use a spetestal local arch for product building
+    # Use a special local arch for product building
     # our $localarch = "x86_64";
 
     # config options for the bs_worker
@@ -219,7 +219,13 @@ data:
     #                           'main' => 'http://main-backend-server:5252',
     #                         };
 
-    # host spetestfic configs
+    # Publish hooks
+    our $publishedhook_use_regex = 1;
+    our $publishedhook = {
+      "home:golf66/*" => "/usr/local/bin/publish-hook.sh",
+    };
+
+    # host specific configs
     my $hostconfig = __FILE__;
     $hostconfig =~ s/[^\/]*$/bsconfig.$hostname/;
     if (-r $hostconfig) {
@@ -227,7 +233,7 @@ data:
       require $hostconfig;
     }
 
-    # For spetestfic build constraints, for example to require a spetestfic
+    # For specific build constraints, for example to require a specific
     # security level of the workers.
     #
     #our $dispatch_constraint = sub {
@@ -278,7 +284,7 @@ data:
     ];
 
 
-    # spetestal options to use for starting containers in run-service-containerized
+    # special options to use for starting containers in run-service-containerized
     # our $docker_custom_opt = [];
 
     ## Server where mirrored gems could be found - used in services like obs-service-bundle_gems
@@ -446,7 +452,7 @@ data:
     ## Default:     ""
     ## Config:      OBS
     #
-    # A label can be used to build spetestfic packages only on dedicated hosts.
+    # A label can be used to build specific packages only on dedicated hosts.
     # For example for benchmarking.
     #
     OBS_WORKER_HOSTLABELS=""
@@ -534,7 +540,7 @@ data:
     # for KVM, you have to create with (example for openSUSE 11.2):
     #
     # export rootfstype="ext4"
-    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_ptest virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
+    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_pci virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
     #
     # a working initrd file which includes virtio and binfmt_misc for OBS in order to work fine
     #
@@ -568,7 +574,7 @@ data:
     ## Config:      OBS
     #
     #
-    # Buildflag vmfstype may overwrite this for a spetestfic job.
+    # Buildflag vmfstype may overwrite this for a specific job.
     OBS_VM_DISK_AUTOSETUP_FILESYSTEM="ext3"
 
     ## Path:        Applications/OBS
@@ -591,7 +597,7 @@ data:
     OBS_VM_USE_TMPFS=""
 
     ## Path:        Applications/OBS
-    ## Description: Spetestfy custom options for VM handler
+    ## Description: Specify custom options for VM handler
     ## Type:        string
     ## Default:     ""
     ## Config:      OBS
@@ -683,7 +689,7 @@ data:
     ## Default:     ""
     ## Config:      OBS
     #
-    # This is a hook for doing spetestal things in your setup at boot time
+    # This is a hook for doing special things in your setup at boot time
     #
     OBS_WORKER_SCRIPT_URL=""
 
@@ -834,10 +840,10 @@ spec:
         kubernetes.io/arch: amd64
       containers:
       - name: backend-test
-        image: hub.deepin.com/k3s/obs/backend:test
+        image: hub.deepin.com/k3s/obs/backend:latest
         imagePullPolicy: Always
         ports:
-        - name: backend-test
+        - name: backend-port
           containerPort: 5252
         volumeMounts:
         - name: backend-config-test
@@ -846,13 +852,14 @@ spec:
         - name: backend-server-config-test
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
-        - name: backend-data
-          mountPath: /srv/obs
         - name: backend-datas
           mountPath: /srv/obs-datas
         - name: backend-xml-config-test
-          mountPath: /srv/obs/configuration.xml
+          mountPath: /srv/configuration.xml
           subPath: configuration.xml
+        - name: backend-repo-rsync-hook
+          mountPath: /usr/local/bin/publish-hook.sh
+          subPath: publish-hook.sh
       volumes:
       - name: backend-config-test
         configMap:
@@ -866,9 +873,6 @@ spec:
           items:
           - key: obs-server
             path: obs-server
-      - name: backend-data
-        persistentVolumeClaim:
-          claimName: backend-test
       - name: backend-datas
         persistentVolumeClaim:
           claimName: backend-datas
@@ -878,6 +882,13 @@ spec:
           items:
           - key: configuration.xml
             path: configuration.xml
+      - name: backend-repo-rsync-hook
+        configMap:
+          name: backend-repo-rsync-hook
+          defaultMode: 493
+          items:
+          - key: publish-hook.sh
+            path: publish-hook.sh
       hostname: backend-test
       imagePullSecrets:
       - name: deepinhub
@@ -893,7 +904,7 @@ spec:
   selector:
     app: obs-test
   ports:
-  - name: backend-test
+  - name: backend-port
     protocol: TCP
     port: 5252
     targetPort: 5252
