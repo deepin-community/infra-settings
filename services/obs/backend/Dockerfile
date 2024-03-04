@@ -41,14 +41,14 @@ RUN patch -p1 -d /usr/lib/obs/server/ < /patches/0010-feat-obs-worker-add-client
 RUN patch -p1 -d /usr/lib/obs/server/ < /patches/011-feat-Remove-backend-https-check.patch
 
 # add crontab support
-RUN https_proxy=http://10.20.52.80:7890 zypper install -y cron
+RUN https_proxy=http://10.20.52.80:7890 zypper install -y cron rsync
 COPY backend/crontab /etc/cron.d/crontab
 COPY backend/cron-tasks.sh /cron-tasks.sh
 RUN chmod +x /cron-tasks.sh
 
-WORKDIR /srv/obs/
+WORKDIR /srv/
 
-VOLUME [ "/srv/obs/" ]
+#VOLUME [ "/srv/obs/" ]
 
 ADD backend/entrypoint.sh /entrypoint.sh
 
