@@ -1025,23 +1025,25 @@ data:
     }
 
     # Change also the SLP reg files in /etc/slp.reg.d/ when you touch hostname or port
-    our $srcserver = "http://172.25.6.1:30352";
+    our $srcserver = "http://src:30352";
     #our $reposerver = "http://$hostname:5252";
-    our $serviceserver = "http://172.25.6.1:30152";
+    our $serviceserver = "http://src:30152";
     #our $clouduploadserver = "http://$hostname:5452";
     #
 
     our @reposervers = ("
-      http://10.20.64.72:5252,
-      http://172.25.6.12:5252,
-      http://10.20.64.41:31252,
-      http://172.25.6.15:5252,
+      http://obs-backend-develop-main.cicd.getdeepin.org,
+      http://obs-backend-ci.cicd.getdeepin.org,
+      http://obs-backend-larv.cicd.getdeepin.org,
+      http://obs-backend-test.cicd.getdeepin.org,
+      http://obs-backend-other.cicd.getdeepin.org,
+      http://obs-backend-vioken.cicd.getdeepin.org,
     ");
 
     our $redisserver = "redis://127.0.0.1";
     # you can use different ports for worker connections
-    our $workersrcserver = "http://220.202.18.3:30352";
-    our $workerreposerver = "http://172.25.6.13:5252";
+    #our $workersrcserver = "http://220.202.18.3:30352";
+    #our $workerreposerver = "http://172.25.6.13:5252";
 
     our $servicedir = "/usr/lib/obs/service/";
     our $servicetempdir = "/srv/obs/service";
@@ -1113,6 +1115,7 @@ data:
     "local" => "local",
     "i586" => "i586",
     "x86_64" => "i586",
+    "x86_64" => "i386",
     "ppc" => "ppc",
     "ppc64" => "ppc",
     "ppc64le" => "ppc",
@@ -1185,20 +1188,26 @@ data:
     # this defines how the projects are split. All home: projects are hosted
     # on an own server in this example. Order is important.
     our $partitioning = [
-            'deepin:CI'    => 'backend-ci',
-            'home:deepin-obs'    => 'backend-ci',
-            'home:yukarichiba:deepin-ports'    => 'backend-larv',
-            'deepin:CI:dodconfig'    => 'backend-ci',
-            '.*'    => 'back-deepin-main',
-          'home:golf66'    => 'backend-test',
+      #'deepin:CI:TestingIntegration:test-integration-pr-533'    => 'back-deepin-main',
+      'deepin:CI'    => 'backend-ci',
+      #'vioken'    => 'backend-vioken',
+      'home:deepin-obs'    => 'backend-ci',
+      #'home:yukarichiba:deepin-ports'    => 'backend-larv',
+      'deepin:Develop:main'    => 'backend-develop-main',
+      'home:golf66:larv'    => 'backend-larv',
+      'home:golf66'    => 'backend-test',
+      '.*'    => 'backend-other',
     ];
+
     #
     our $partitionservers = {
-            #'back-deepin-main' => 'http://172.25.6.2:5252',
-            'back-deepin-main' => 'http://10.20.64.72:5252',
-            'backend-ci' => 'http://172.25.6.12:5252',
-            'backend-larv' => 'http://10.20.64.41:31252',
-            'backend-test' => 'http://172.25.6.15:5252',
+      #'back-deepin-main' => 'http://172.25.6.2:5252',
+      'backend-develop-main' => 'http://obs-backend-develop-main.cicd.getdeepin.org',
+      'backend-ci' => 'http://obs-backend-ci.cicd.getdeepin.org',
+      'backend-larv' => 'http://obs-backend-larv.cicd.getdeepin.org',
+      'backend-test' => 'http://obs-backend-test.cicd.getdeepin.org',
+      'backend-other' => 'http://obs-backend-other.cicd.getdeepin.org',
+      #'backend-vioken' => 'http://obs-backend-vioken.cicd.getdeepin.org',
     };
 
     # host specific configs
@@ -1274,7 +1283,6 @@ data:
     # our $cloudupload_pubkey = "/etc/obs/cloudupload/_pubkey"; # default setting
 
     1;
-
 kind: ConfigMap
 metadata:
   annotations: {}
@@ -1309,9 +1317,9 @@ data:
       response_schema_validation: false
 
       # backend source server
-      source_host: 172.25.6.1
+      source_host: obs-src.cicd.getdeepin.org
       # NOTE: the source_port setting is ignored and hardcoded for "test" and "development" env
-      source_port: 30352
+      source_port: 80
       #source_protocol: https
       #source_protocol_ssl_verification: false
 
@@ -1739,6 +1747,10 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: gateway
+    k8s.kuboard.cn/name: src
   name: src
   namespace: obs
 spec:
@@ -1807,17 +1819,15 @@ spec:
           ip: 10.20.64.86
       imagePullSecrets:
         - name: deepinhub
-      nodeSelector:
-        obs-type: src
-      tolerations:
-      - key: "node.kubernetes.io/unschedulable"
-        operator: "Equal"
-        value: ""
-        effect: "NoSchedule"
+      nodeName: deepinci-amd1 #加速源码下载
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoSchedule
+          key: node.kubernetes.io/unschedulable
+          operator: Exists
       volumes:
         - configMap:
             defaultMode: 420
@@ -1833,10 +1843,9 @@ spec:
                 path: obs-server
             name: src-server-config
           name: src-server-config
-        - hostPath:
-            path: /srv/obs/
-            type: DirectoryOrCreate
-          name: src-data
+        - name: src-data
+          persistentVolumeClaim:
+            claimName: src-data
         - configMap:
             defaultMode: 420
             items:
@@ -1857,30 +1866,69 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: gateway
+    k8s.kuboard.cn/name: src
   name: src
   namespace: obs
 spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
   ports:
     - name: srcport
+      nodePort: 30352
       port: 30352
       protocol: TCP
       targetPort: 30352
-      nodePort: 30352
     - name: serviceport
+      nodePort: 30152
       port: 30152
       protocol: TCP
       targetPort: 30152
-      nodePort: 30152
   selector:
     app: src
+  sessionAffinity: None
   type: NodePort
 
+# Obs Src Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: gateway
+    k8s.kuboard.cn/name: src
+  name: src
+  namespace: obs
+  resourceVersion: '244714551'
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: obs-src.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: src
+                port:
+                  number: 30352
+            path: /
+            pathType: Prefix
 
 # Obs Api Deployment
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: web
+    k8s.kuboard.cn/name: api
   name: api
   namespace: obs
 spec:
@@ -1924,14 +1972,14 @@ spec:
         - name: deepinhub
       nodeSelector:
         obs-type: src
-      tolerations:
-      - key: "node.kubernetes.io/unschedulable"
-        operator: "Equal"
-        value: ""
-        effect: "NoSchedule"
       restartPolicy: Always
       schedulerName: default-scheduler
+      securityContext: {}
       terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoSchedule
+          key: node.kubernetes.io/unschedulable
+          operator: Exists
       volumes:
         - configMap:
             defaultMode: 420
@@ -1960,15 +2008,25 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations: {}
+  labels:
+    k8s.kuboard.cn/layer: web
+    k8s.kuboard.cn/name: api
   name: api
   namespace: obs
 spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
   ports:
     - name: web
+      nodePort: 31443
       port: 31443
       protocol: TCP
       targetPort: 31443
-      nodePort: 31443
   selector:
     app: api
+  sessionAffinity: None
   type: NodePort
