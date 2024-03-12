@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+data:
+  G2M_GOTIFY_DELETE_SENT: 'false'
+  G2M_GOTIFY_FORMAT_HTML: '"<h4>{{title}} (<u>{{app}}</u>)</h4>\n{{message}}"'
+  G2M_GOTIFY_FORMAT_PLAIN: '"{{title}} ({{app}}) \n{{message}}"'
+  G2M_GOTIFY_TOKEN: ClZREFYQleBKnDy
+  G2M_GOTIFY_URL: 'http://gotify-headless'
+  G2M_MATRIX_HOMESERVER: 'https://matrix.getdeepin.org'
+  G2M_MATRIX_PASSWORD:
+  G2M_MATRIX_ROOM_ID:
+  G2M_MATRIX_SESSION_DIR: /session
+  G2M_MATRIX_USERNAME: '@golf66:deepin.org'
+kind: ConfigMap
+metadata:
+  annotations: {}
+  labels: {}
+  name: gotify2matrix-conf
+  namespace: rsshub
