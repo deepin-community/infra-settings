@@ -1,0 +1,16 @@
+---
+# Obs src data
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: src-data
+  namespace: obs
+  labels:
+    app: src-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "obsbackend"
+  resources:
+    requests:
+      storage: 600Gi
