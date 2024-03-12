@@ -1,43 +1,42 @@
 prowjob_namespace: prow
 pod_namespace: test-pods
-
 in_repo_config:
   enabled:
-    "*": true
-
+    '*': true
 deck:
- spyglass:
-   lenses:
-   - lens:
-       name: metadata
-     required_files:
-     - started.json|finished.json
-   - lens:
-       config:
-       name: buildlog
-     required_files:
-     - build-log.txt
-   - lens:
-       name: junit
-     required_files:
-     - .*/junit.*\.xml
-   - lens:
-       name: podinfo
-     required_files:
-     - podinfo.json
-
+  spyglass:
+    lenses:
+      - lens:
+          name: metadata
+        required_files:
+          - started.json|finished.json
+      - lens:
+          config: null
+          name: buildlog
+        required_files:
+          - build-log.txt
+      - lens:
+          name: junit
+        required_files:
+          - .*/junit.*\.xml
+      - lens:
+          name: podinfo
+        required_files:
+          - podinfo.json
 plank:
   job_url_prefix_config:
-    "*": https://prow.deepin.org/view/
+    '*': 'https://prow.deepin.org/view/'
   report_templates:
     '*': >-
-        [Full PR test history](https://prow.deepin.org/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).
-        [Your PR dashboard](https://prow.deepin.org/pr?query=is:pr+state:open+author:{{with
-        index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}).
+      [Full PR test
+      history](https://prow.deepin.org/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with
+      index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}). [Your PR
+      dashboard](https://prow.deepin.org/pr?query=is:pr+state:open+author:{{with
+      index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}).
   default_decoration_configs:
-    "*":
+    '*':
       gcs_configuration:
-        bucket: s3://prow-logs
+        bucket: 's3://prow-logs'
         path_strategy: explicit
       s3_credentials_secret: s3-credentials
       utility_images:
@@ -45,27 +44,26 @@ plank:
         entrypoint: hub.deepin.com/prow/entrypoint
         initupload: hub.deepin.com/prow/initupload
         sidecar: hub.deepin.com/prow/sidecar
-
 branch-protection:
   orgs:
     peeweep-test:
       protect: true
       required_status_checks:
         contexts:
-        - "OBS: deepin_develop/aarch64"
-        - "OBS: deepin_develop/x86_64"
+          - 'OBS: deepin_develop/aarch64'
+          - 'OBS: deepin_develop/x86_64'
       include:
-        - "master"
-        - "main"
+        - master
+        - main
     deepin-community:
       protect: true
       required_status_checks:
         contexts:
-        - "OBS: deepin_develop/aarch64"
-        - "OBS: deepin_develop/x86_64"
+          - 'OBS: deepin_develop/aarch64'
+          - 'OBS: deepin_develop/x86_64'
       include:
-        - "master"
-        - "main"
+        - master
+        - main
       repos:
         Repository-Integration:
           protect: false
@@ -151,240 +149,261 @@ branch-protection:
           protect: false
         sig-deepin-pkg:
           protect: false
-
 tide:
   queries:
-  - orgs:
-    - deepin-community
-    - peeweep-test
-    labels:
-    - approved
-    excludedRepos:
-    - deepin-community/template-repository
-    - deepin-community/rfcs
-    - deepin-community/SIG
-    - deepin-community/Repository-Integration
-    missingLabels:
-    - needs-rebase
-    - do-not-merge/hold
-    - do-not-merge/work-in-progress
-    - do-not-merge/invalid-owners-file
-  - repos:
-    - linuxdeepin/dtk
-    - linuxdeepin/dtkcommon
-    - linuxdeepin/dtkcore
-    - linuxdeepin/dtkgui
-    - linuxdeepin/dtkwidget
-    - linuxdeepin/dtkdeclarative
-    - linuxdeepin/deepin-unioncode
-    - linuxdeepin/dde-shell
-    labels:
-    - approved
-    missingLabels:
-    - do-not-merge/hold
-    - do-not-merge/work-in-progress
-    - do-not-merge/invalid-owners-file
-    - needs-rebase
-  - author: deepin-ci-robot
-    labels: # deepin-ci-robot should only create autobump PR with this label
-    - skip-review
-    missingLabels:
-    - do-not-merge
-    - do-not-merge/blocked-paths
-    - do-not-merge/contains-merge-commits
-    - do-not-merge/hold
-    - do-not-merge/invalid-commit-message
-    - do-not-merge/invalid-owners-file
-    - do-not-merge/release-note-label-needed
-    - do-not-merge/work-in-progress
-    - needs-rebase
-    orgs:
-    - peeweep-test
-    - deepin-community
-    repos:
-    - linuxdeepin/dtk
-    - linuxdeepin/dtkcommon
-    - linuxdeepin/dtkcore
-    - linuxdeepin/dtkgui
-    - linuxdeepin/dtkwidget
-    - linuxdeepin/dtkdeclarative
-  - author: deepin-community-ci-bot
-    labels: # deepin-community-ci-bot should only create autobump PR with this label
-    - skip-review
-    missingLabels:
-    - do-not-merge
-    - do-not-merge/blocked-paths
-    - do-not-merge/contains-merge-commits
-    - do-not-merge/hold
-    - do-not-merge/invalid-commit-message
-    - do-not-merge/invalid-owners-file
-    - do-not-merge/release-note-label-needed
-    - do-not-merge/work-in-progress
-    - needs-rebase
-    repos:
-    - deepin-community/SIG
+    - orgs:
+        - deepin-community
+        - peeweep-test
+      labels:
+        - approved
+      excludedRepos:
+        - deepin-community/template-repository
+        - deepin-community/rfcs
+        - deepin-community/SIG
+        - deepin-community/Repository-Integration
+      missingLabels:
+        - needs-rebase
+        - do-not-merge/hold
+        - do-not-merge/work-in-progress
+        - do-not-merge/invalid-owners-file
+    - repos:
+        - linuxdeepin/dtkcommon
+        - linuxdeepin/dtkcore
+        - linuxdeepin/dtkgui
+        - linuxdeepin/dtkwidget
+        - linuxdeepin/dtkdeclarative
+        - linuxdeepin/deepin-unioncode
+      labels:
+        - approved
+      missingLabels:
+        - do-not-merge/hold
+        - do-not-merge/work-in-progress
+        - do-not-merge/invalid-owners-file
+        - needs-rebase
+    - author: deepin-ci-robot
+      labels:
+        - skip-review
+      missingLabels:
+        - do-not-merge
+        - do-not-merge/blocked-paths
+        - do-not-merge/contains-merge-commits
+        - do-not-merge/hold
+        - do-not-merge/invalid-commit-message
+        - do-not-merge/invalid-owners-file
+        - do-not-merge/release-note-label-needed
+        - do-not-merge/work-in-progress
+        - needs-rebase
+      orgs:
+        - peeweep-test
+        - deepin-community
+      repos:
+        - linuxdeepin/dtk
+        - linuxdeepin/dtkcommon
+        - linuxdeepin/dtkcore
+        - linuxdeepin/dtkgui
+        - linuxdeepin/dtkwidget
+        - linuxdeepin/dtkdeclarative
+    - author: deepin-community-ci-bot
+      labels:
+        - skip-review
+      missingLabels:
+        - do-not-merge
+        - do-not-merge/blocked-paths
+        - do-not-merge/contains-merge-commits
+        - do-not-merge/hold
+        - do-not-merge/invalid-commit-message
+        - do-not-merge/invalid-owners-file
+        - do-not-merge/release-note-label-needed
+        - do-not-merge/work-in-progress
+        - needs-rebase
+      repos:
+        - deepin-community/SIG
   merge_method:
     peeweep-test: rebase
     deepin-community: rebase
     linuxdeepin: rebase
-
-#decorate_all_jobs: true
-#periodics:
-#- interval: 1m
-#  agent: kubernetes
-#  name: echo-test
-#  spec:
-#    containers:
-#    - image: alpine
-#      command: ["/bin/date"]
-
 obscijobs:
-- repos:
-  - linuxdeepin
-  - deepin-community
-  - peeweep-test
-  project_config: |
-    ""
-  project_meta_tpl: |
-    <project name="deepin:CI:PROJECT_NAME">
-      <title/>
-      <description/>
-      <repository name="deepin_develop">
-        <path project="deepin:CI" repository="deepin_develop"/>
-        <arch>x86_64</arch>
-        <arch>aarch64</arch>
-      </repository>
-    </project>
-  package_meta_tpl: |
-    <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
-      <title/>
-      <description/>
-    </package>
-  project_br_tpl: '{"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}'
-  project_service_tpl: |
-    <services>
-      <service name="obs_gbp">
-        <param name="url">https://github.com/REPO.git</param>
-        <param name="scm">git</param>
-        <param name="exclude">.git</param>
-        <param name="exclude">.github</param>
-        <param name="versionformat">@CHANGELOG@</param>
-        <param name="gbp-dch-release-update">enable</param>
-      </service>
-    </services>
-  excluderepos:
-  - deepin-community/SIG
-  - deepin-community/rfcs
-  - deepin-community/Repository-Integration
-  - deepin-community/Repository-Manager
-  - deepin-community/.github
-  - deepin-community/sig-deepin-shared-libs
-  - deepin-communty/sig-Phytium
-  - deepin-communty/sig-openEuler
-  - deepin-communty/sig-deepin-hvml
-  - deepin-community/sig-dde-porting
-  - deepin-community/sig-deepin-virt
-  - deepin-community/sig-linglong
-  - deepin-community/sig-deepin-cicd
-  - deepin-community/sig-deepin-doc-doc-go
-  - deepin-community/sig-deepin-qt
-  - deepin-community/sig-deepin-surface
-  - deepin-community/sig-deepin-wsl
-  - deepin-community/sig-deepin-m1
-  - deepin-community/sig-deepin-in-spanish
-  - deepin-community/sig-template
-  - deepin-community/sig-deepin-hardware-support
-  - deepin-community/sig-deepin-media
-  - deepin-community/sig-deepin-security-packaging
-  - deepin-community/sig-deepin-kernel
-  - deepin-community/sig-deepin-go
-  - deepin-community/sig-deepin-network-manager
-  - deepin-community/sig-deepin-input-method
-  - deepin-community/sig-deepin-audio
-  - deepin-community/sig-deepin-community-design
-  - deepin-community/sig-gcc-packaging
-  - deepin-community/sig-deepin-glibc
-  - deepin-community/sig-deepin-wayland-xorg
-  - deepin-community/sig-deepin-systemd
-  - deepin-community/sig-deepin-grub
-  - deepin-community/sig-deepin-system-tools
-  - deepin-community/sig-deepin-pkg
-  - deepin-community/sig-deepin-sysdev-team
-  - deepin-community/.test-infra
-  - deepin-community/.actions-runner-controller
-  - deepin-community/.guide.deepin.org
-  - deepin-community/.blog.deepin.org
-  - deepin-community/infra-settings
-  - deepin-community/deepin-chatopt-script
-- repos:
-  - linuxdeepin/deepin-osconfig
-  - linuxdeepin/linglong
-  project_config: |
-    ""
-  project_meta_tpl: |
-    <project name="deepin:CI:PROJECT_NAME">
-      <title/>
-      <description/>
-      <repository name="deepin_develop">
-        <path project="deepin:CI" repository="deepin_develop"/>
-        <arch>x86_64</arch>
-        <arch>aarch64</arch>
-      </repository>
-    </project>
-  package_meta_tpl: |
-    <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
-      <title/>
-      <description/>
-    </package>
-  project_br_tpl: '{"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}'
-  project_service_tpl: |
-    <services>
-      <service name="obs_gbp">
-        <param name="url">https://github.com/REPO.git</param>
-        <param name="scm">git</param>
-        <param name="exclude">.git</param>
-        <param name="exclude">.github</param>
-        <param name="versionformat">@CHANGELOG@</param>
-        <param name="gbp-dch-release-update">enable</param>
-      </service>
-    </services>
-- repos:
-  - linuxdeepin/dde-shell
-  project_meta_tpl: |
-    <project name="deepin:CI:PROJECT_NAME">
-      <title/>
-      <description/>
-      <repository name="deepin_develop">
-        <path project="deepin:CI" repository="deepin_develop"/>
-        <arch>x86_64</arch>
-        <arch>aarch64</arch>
-      </repository>
-      <repository name="debian">
-        <path project="deepin:CI" repository="debian_sid"/>
-        <arch>x86_64</arch>
-      </repository>
-      <repository name="archlinux">
-        <path project="deepin:CI" repository="archlinux"/>
-        <arch>x86_64</arch>
-      </repository>
-    </project>
-  package_meta_tpl: |
-    <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
-      <title/>
-      <description/>
-    </package>
-  project_br_tpl: '{"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}'
-  project_service_tpl: |
-    <services>
-      <service name="obs_gbp">
-        <param name="url">https://github.com/linuxdeepin/REPO.git</param>
-        <param name="scm">git</param>
-        <param name="exclude">.git</param>
-        <param name="exclude">.github</param>
-        <param name="versionformat">@CHANGELOG@@DEEPIN_OFFSET@</param>
-        <param name="extract">archlinux/*</param>
-      </service>
-      <service name="set_version">
-        <param name="file">_service:obs_gbp:PKGBUILD</param>
-      </service>
-    </services>
+  - repos:
+      - linuxdeepin
+      - deepin-community
+      - peeweep-test
+    project_config: |
+      ""
+    project_meta_tpl: |
+      <project name="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+        <repository name="deepin_develop">
+          <path project="deepin:CI" repository="deepin_develop"/>
+          <arch>x86_64</arch>
+          <arch>aarch64</arch>
+        </repository>
+      </project>
+    package_meta_tpl: |
+      <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+      </package>
+    project_br_tpl: >-
+      {"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}
+    project_service_tpl: |
+      <services>
+        <service name="obs_gbp">
+          <param name="url">https://github.com/REPO.git</param>
+          <param name="scm">git</param>
+          <param name="exclude">.git</param>
+          <param name="exclude">.github</param>
+          <param name="versionformat">@CHANGELOG@</param>
+          <param name="gbp-dch-release-update">enable</param>
+        </service>
+      </services>
+    excluderepos:
+      - deepin-community/SIG
+      - deepin-community/rfcs
+      - deepin-community/Repository-Integration
+      - deepin-community/Repository-Manager
+      - deepin-community/.github
+      - deepin-community/sig-deepin-shared-libs
+      - deepin-communty/sig-Phytium
+      - deepin-communty/sig-openEuler
+      - deepin-communty/sig-deepin-hvml
+      - deepin-community/sig-dde-porting
+      - deepin-community/sig-deepin-virt
+      - deepin-community/sig-linglong
+      - deepin-community/sig-deepin-cicd
+      - deepin-community/sig-deepin-doc-doc-go
+      - deepin-community/sig-deepin-qt
+      - deepin-community/sig-deepin-surface
+      - deepin-community/sig-deepin-wsl
+      - deepin-community/sig-deepin-m1
+      - deepin-community/sig-deepin-in-spanish
+      - deepin-community/sig-template
+      - deepin-community/sig-deepin-hardware-support
+      - deepin-community/sig-deepin-media
+      - deepin-community/sig-deepin-security-packaging
+      - deepin-community/sig-deepin-kernel
+      - deepin-community/sig-deepin-go
+      - deepin-community/sig-deepin-network-manager
+      - deepin-community/sig-deepin-input-method
+      - deepin-community/sig-deepin-audio
+      - deepin-community/sig-deepin-community-design
+      - deepin-community/sig-gcc-packaging
+      - deepin-community/sig-deepin-glibc
+      - deepin-community/sig-deepin-wayland-xorg
+      - deepin-community/sig-deepin-systemd
+      - deepin-community/sig-deepin-grub
+      - deepin-community/sig-deepin-system-tools
+      - deepin-community/sig-deepin-pkg
+      - deepin-community/sig-deepin-sysdev-team
+      - deepin-community/.test-infra
+      - deepin-community/.actions-runner-controller
+      - deepin-community/.guide.deepin.org
+      - deepin-community/.blog.deepin.org
+      - deepin-community/infra-settings
+      - deepin-community/deepin-chatopt-script
+  - repos:
+      - linuxdeepin/deepin-osconfig
+    project_config: |
+      ""
+    project_meta_tpl: |
+      <project name="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+        <repository name="deepin_develop">
+          <path project="deepin:CI" repository="deepin_develop"/>
+          <arch>x86_64</arch>
+          <arch>aarch64</arch>
+        </repository>
+      </project>
+    package_meta_tpl: |
+      <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+      </package>
+    project_br_tpl: >-
+      {"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}
+    project_service_tpl: |
+      <services>
+        <service name="obs_gbp">
+          <param name="url">https://github.com/REPO.git</param>
+          <param name="scm">git</param>
+          <param name="exclude">.git</param>
+          <param name="exclude">.github</param>
+          <param name="versionformat">@CHANGELOG@</param>
+          <param name="gbp-dch-release-update">enable</param>
+        </service>
+      </services>
+  - repos:
+      - linuxdeepin/dde-shell
+    project_meta_tpl: |
+      <project name="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+        <repository name="deepin_develop">
+          <path project="deepin:CI" repository="deepin_develop"/>
+          <arch>x86_64</arch>
+          <arch>aarch64</arch>
+        </repository>
+        <repository name="debian">
+          <path project="deepin:CI" repository="debian_sid"/>
+          <arch>x86_64</arch>
+        </repository>
+        <repository name="archlinux">
+          <path project="deepin:CI" repository="archlinux"/>
+          <arch>x86_64</arch>
+        </repository>
+      </project>
+    package_meta_tpl: |
+      <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+      </package>
+    project_br_tpl: >-
+      {"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}
+    project_service_tpl: |
+      <services>
+        <service name="obs_gbp">
+          <param name="url">https://github.com/linuxdeepin/REPO.git</param>
+          <param name="scm">git</param>
+          <param name="exclude">.git</param>
+          <param name="exclude">.github</param>
+          <param name="versionformat">@CHANGELOG@@DEEPIN_OFFSET@</param>
+          <param name="extract">archlinux/*</param>
+        </service>
+        <service name="set_version">
+          <param name="file">_service:obs_gbp:PKGBUILD</param>
+        </service>
+      </services>
+  - repos:
+      - linuxdeepin/linglong
+    project_meta_tpl: |
+      <project name="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+        <repository name="deepin_develop">
+          <path project="deepin:CI" repository="deepin_testing"/>
+          <arch>x86_64</arch>
+          <arch>aarch64</arch>
+        </repository>
+        <repository name="debian">
+          <path project="deepin:CI" repository="debian_sid"/>
+          <arch>x86_64</arch>
+        </repository>
+      </project>
+    package_meta_tpl: |
+      <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+      </package>
+    project_br_tpl: >-
+      {"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}
+    project_service_tpl: |
+      <services>
+        <service name="obs_gbp">
+          <param name="url">https://github.com/linuxdeepin/REPO.git</param>
+          <param name="scm">git</param>
+          <param name="exclude">.git</param>
+          <param name="exclude">.github</param>
+          <param name="versionformat">@CHANGELOG@@DEEPIN_OFFSET@</param>
+        </service>
+      </services>
