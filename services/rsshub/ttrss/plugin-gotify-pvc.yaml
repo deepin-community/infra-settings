@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ttrss
+  name: plugin-gotify
+  namespace: rsshub
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "rsshub"
+  resources:
+    requests:
+      storage: 1Gi
