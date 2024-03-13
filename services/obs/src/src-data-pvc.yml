@@ -13,4 +13,4 @@ spec:
   storageClassName: "obsbackend"
   resources:
     requests:
-      storage: 600Gi
+      storage: 1000Gi
