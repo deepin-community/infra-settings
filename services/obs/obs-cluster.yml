@@ -1780,6 +1780,9 @@ spec:
               protocol: TCP
             - containerPort: 30152
               protocol: TCP
+          env:
+            - name: CACHEDIRECTORY
+              value: /srv/obs/.cache
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
