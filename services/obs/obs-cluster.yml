@@ -1800,6 +1800,10 @@ spec:
             - mountPath: /srv/www/obs/api/config/options.yml
               name: api-options-config
               subPath: options.yml
+            - mountPath: /srv/obs/service
+              name: servicedir
+            - mountPath: /srv/obs/.cache
+              name: cachedir
       dnsPolicy: ClusterFirst
       hostAliases:
         - hostnames:
@@ -1863,6 +1867,14 @@ spec:
                 path: options.yml
             name: api-options-config
           name: api-options-config
+        - hostPath:
+            path: /faststorage/obsservice
+            type: Directory
+          name: servicedir
+        - hostPath:
+            path: /faststorage/gitcache
+            type: Directory
+          name: cachedir
 
 # Obs Src Service
 ---
