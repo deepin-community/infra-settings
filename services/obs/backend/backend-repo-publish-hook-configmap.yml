@@ -1,0 +1,15 @@
+---
+# Obs publish hook
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: obs
+  name: backend-repo-rsync-hook
+data:
+  publish-hook.sh: |
+    #!/bin/bash
+    OBSHOME="/srv/obs"
+    SRC_REPO_DIR="$OBSHOME/repos"
+    LOGFILE="$OBSHOME/log/reposync.log"
+    DST_REPO_DIR="/srv/obs-datas/repos"
+    rsync -av --log-file=$LOGFILE --link-dest $SRC_REPO_DIR $SRC_REPO_DIR/  $DST_REPO_DIR/
