@@ -1982,7 +1982,11 @@ spec:
             - mountPath: /srv/www/obs/api/config/options.yml
               name: api-options-config
               subPath: options.yml
-      dnsPolicy: ClusterFirst
+      dnsConfig:
+        nameservers:
+          - 114.114.114.114
+          - 8.8.8.8
+      dnsPolicy: None
       imagePullSecrets:
         - name: deepinhub
       nodeSelector:
