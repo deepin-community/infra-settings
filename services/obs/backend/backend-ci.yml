@@ -848,6 +848,8 @@ spec:
         ports:
         - name: backend-port
           containerPort: 5252
+        - name: binproxy-port
+          containerPort: 5254
         volumeMounts:
         - name: backend-config-ci
           mountPath: /usr/lib/obs/server/BSConfig.pm
@@ -915,6 +917,10 @@ spec:
     protocol: TCP
     port: 5252
     targetPort: 5252
+  - name: binproxy-port
+    protocol: TCP
+    port: 5254
+    targetPort: 5254
   type: ClusterIP
 
 ---
@@ -937,5 +943,15 @@ spec:
                 name: backend-ci
                 port:
                   number: 5252
+            path: /
+            pathType: Prefix
+    - host: obs-backend-ci-binproxy.cicd.getdeepin.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: backend-ci
+                port:
+                  number: 5254
             path: /
             pathType: Prefix

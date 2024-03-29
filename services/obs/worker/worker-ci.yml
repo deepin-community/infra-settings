@@ -639,6 +639,15 @@ data:
     #OBS_VM_USE_TMPFS="yes"
     #OBS_WORKER_TEST_MODE="yes"
 
+    ## Path:        Applications/OBS
+    ## Description: URL to a proxy service for caching binaries used by worker
+    ## Type:        string
+    ## Default:     ""
+    ## Config:      OBS
+    #
+    #
+    OBS_WORKER_BINARIES_PROXY="http://backend-ci:5254"
+
 ---
 # Obs Worker Amd64 StatefulSet
 apiVersion: apps/v1
