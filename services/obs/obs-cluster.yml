@@ -1804,6 +1804,9 @@ spec:
               name: servicedir
             - mountPath: /srv/obs/.cache
               name: cachedir
+      dnsConfig:
+        nameservers:
+          - 10.20.0.10
       dnsPolicy: ClusterFirst
       hostAliases:
         - hostnames:
