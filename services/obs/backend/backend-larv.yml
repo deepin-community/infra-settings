@@ -890,6 +890,10 @@ spec:
           - key: publish-hook.sh
             path: publish-hook.sh
       hostname: backend-larv
+      dnsConfig:
+        nameservers:
+          - 10.20.0.10
+      dnsPolicy: ClusterFirst
       imagePullSecrets:
       - name: deepinhub
 

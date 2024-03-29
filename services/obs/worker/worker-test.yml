@@ -708,6 +708,10 @@ spec:
         hostPath:
           path: /storage/OBS/obscache/
           type: DirectoryOrCreate
+      dnsConfig:
+        nameservers:
+          - 10.20.0.10
+      dnsPolicy: ClusterFirst
       imagePullSecrets:
       - name: deepinhub
 
@@ -780,5 +784,9 @@ spec:
         hostPath:
           path: /storage/OBS/obscache/
           type: DirectoryOrCreate
+      dnsConfig:
+        nameservers:
+          - 10.20.0.10
+      dnsPolicy: ClusterFirst
       imagePullSecrets:
       - name: deepinhub
