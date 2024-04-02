@@ -31,6 +31,7 @@ COPY src/server /
 # apply some patches
 RUN patch -p2 -d /usr/lib/obs/service/TarSCM/ < /patches/0001-obs-tar-scm.patch
 RUN patch -p2 -d /usr/lib/obs/service/TarSCM/ < /patches/0003-chore-remove-dpkg-parsechangelog-warning.patch
+RUN patch -p2 -d /usr/lib/obs/service/TarSCM/scm < /patches/0005-fix-cache-dir-lock-file-improper-cleanin.patch
 # RUN patch -p3 -d /usr/lib/obs/server < /patches/0002-feat-Add-linglong-build-support.patch
 RUN tar xf /obs-server.tar -C /usr/lib/obs/; rm /obs-server.tar
 RUN patch -p1 -d /usr/lib/obs/server/build/ < /patches/0004-fix-debian-i386-arch-incorrect-excluded-when-build.patch
