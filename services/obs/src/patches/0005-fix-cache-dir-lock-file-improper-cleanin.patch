@@ -1,0 +1,86 @@
+From 6b5098020133153cd22f768c8889b06f6cc7d04c Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Tue, 2 Apr 2024 09:06:24 +0000
+Subject: [PATCH] fix: cache dir lock file improper cleanin
+
+---
+ scm/base.py | 64 +++++++++++++++++++++++++++--------------------------
+ 1 file changed, 33 insertions(+), 31 deletions(-)
+
+diff --git a/scm/base.py b/scm/base.py
+index 52fd92c..64453bc 100644
+--- a/scm/base.py
++++ b/scm/base.py
+@@ -146,37 +146,39 @@ class Scm():
+         self._calc_dir_to_clone_to(clone_prefix)
+         self.prepare_clone_dir()
+
+-        self.lock_cache()
+-
+-        if not os.path.isdir(self.clone_dir):
+-            # initial clone
+-            logging.debug(
+-                "[fetch_upstream] Initial checkout/clone to directory: '%s'",
+-                self.clone_dir
+-            )
+-            os.mkdir(self.clone_dir)
+-            self.fetch_upstream_scm()
+-        else:
+-            logging.info("Detected cached repository...")
+-            self.update_cache()
+-
+-        self.prepare_working_copy()
+-
+-        # switch_to_revision
+-        self.switch_revision()
+-
+-        # git specific: after switching to desired revision its necessary to
+-        # update
+-        # submodules since they depend on the actual version of the selected
+-        # revision
+-        self.fetch_submodules()
+-
+-        # obs_scm specific: do not allow running git-lfs to prevent storage
+-        #  duplication with tar_scm
+-        if self.args.use_obs_scm:
+-            self.fetch_lfs()
+-
+-        self.unlock_cache()
++        try:
++            self.lock_cache()
++
++            if not os.path.isdir(self.clone_dir):
++                # initial clone
++                logging.debug(
++                    "[fetch_upstream] Initial checkout/clone to directory: '%s'",
++                    self.clone_dir
++                )
++                os.mkdir(self.clone_dir)
++                self.fetch_upstream_scm()
++            else:
++                logging.info("Detected cached repository...")
++                self.update_cache()
++
++            self.prepare_working_copy()
++
++            # switch_to_revision
++            self.switch_revision()
++
++            # git specific: after switching to desired revision its necessary to
++            # update
++            # submodules since they depend on the actual version of the selected
++            # revision
++            self.fetch_submodules()
++
++            # obs_scm specific: do not allow running git-lfs to prevent storage
++            #  duplication with tar_scm
++            if self.args.use_obs_scm:
++                self.fetch_lfs()
++            self.unlock_cache()
++        finally:
++            self.unlock_cache()
+
+     def fetch_submodules(self):
+         """NOOP in other scm's than git"""
+--
+2.35.3
