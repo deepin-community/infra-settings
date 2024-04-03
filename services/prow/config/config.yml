@@ -344,10 +344,6 @@ obscijobs:
           <arch>x86_64</arch>
           <arch>aarch64</arch>
         </repository>
-        <repository name="debian">
-          <path project="deepin:CI" repository="debian_sid"/>
-          <arch>x86_64</arch>
-        </repository>
         <repository name="archlinux">
           <path project="deepin:CI" repository="archlinux"/>
           <arch>x86_64</arch>
