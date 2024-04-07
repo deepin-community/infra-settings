@@ -1,0 +1,82 @@
+# 要安装哪些组件，如果只安装服务端的话保持下方配置即可，如果要安装客户端的话，把 csi 设置为 true
+component:
+  master: true
+  datanode: true
+  metanode: true
+  objectnode: false
+  client: true
+  csi: true
+  monitor: true
+  ingress: true
+
+image:
+  server: hub.cicd.getdeepin.org/cubefs/cfs-server:v3.3.1
+  client: hub.cicd.getdeepin.org/cubefs/cfs-client:v3.3.0
+  blobstore: hub.cicd.getdeepin.org/cubefs/blobstore:3.3.0
+
+  # CSI related images
+  csi_driver: ghcr.cicd.getdeepin.org/cubefs/cfs-csi-driver:3.2.0.150.0
+  csi_provisioner: hub.cicd.getdeepin.org/longhornio/csi-provisioner:v3.6.2
+  csi_attacher: hub.cicd.getdeepin.org/longhornio/csi-attacher:v3.4.0
+  csi_resizer: hub.cicd.getdeepin.org/longhornio/csi-resizer:v1.3.0
+  driver_registrar: hub.cicd.getdeepin.org/longhornio/csi-node-driver-registrar:v2.5.0
+
+  grafana: hub.cicd.getdeepin.org/grafana/grafana:latest
+  prometheus: hub.cicd.getdeepin.org/prom/prometheus:latest
+  consul: consul:1.15.4
+  pull_policy: "IfNotPresent"
+
+# path.data: Master、MetaNode 的元数据存储路径，会以 hostPath 的方式存储在宿主机上，建议使用性能较高的底层磁盘
+# path.log: 所有组件的日志在宿主机上的存储路径
+path:
+  data: /var/lib/cubefs
+  log: /var/log/cubefs
+
+master:
+  # Master 组件实例数量
+  replicas: 3
+  # Master Ingres 配置使用的域名，记得需要将该域名 DNS 解析到 Ingres Controller 的入口，当然也可以不配置，
+  # 在客户端处直接将所有 Master 的 IP + 端口配置上
+  host: cubefs.cicd.getdeepin.org
+
+objectnode:
+  # ObjectNode 组件实例数量
+  replicas: 3
+  
+metanode:
+  # MetaNode 可以使用的总内存，单位字节，建议设置为机器可以内存的 75-80%，也可以按需减少
+  total_mem: "107374182400"
+
+datanode:
+  # DataNode 要使用的磁盘，可以挂载多块
+  # 格式: 挂载点:保留的空间
+  # 保留的空间: 单位字节，当磁盘剩余空间小于该值时将不会再在该磁盘上写入数据(默认保留20GB)
+  disks:
+    - /cubefs:21474836480
+
+# CSI 客户端配置
+provisioner:
+  # Kubelet 的主目录
+  kubelet_path: /var/lib/kubelet
+
+grafana:
+  host: monitor-cubefs.cicd.getdeepin.org
+
+# POSIX 客户端
+client:
+  replicas: 1
+  vol_name: "test"
+  owner: "cubefs"
+  log_level: error
+  exporter_port: 9530
+  prof: 17410
+  resources:
+    enabled: true
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1024Mi"
+      cpu: "1000m"
+  nodeSelector:
+    "component.cubefs.io/client": "enabled"
