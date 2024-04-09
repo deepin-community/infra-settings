@@ -43,7 +43,7 @@ index 6a8424a972..3de5e10b16 100644
 +            payload['arch'] = arch
 +            payload['project'] = step.target_project_name
 +            payload['package'] = package
-+            SCMStatusReporter.new(payload, payload, scm_token, workflow_run, 'pending', initial_report: false).call
++            SCMStatusReporter.new(payload, payload, scm_token, workflow_run, 'pending', initial_report: false).call if not name.include?("debian")
 +          end
 +        end
 +      end
