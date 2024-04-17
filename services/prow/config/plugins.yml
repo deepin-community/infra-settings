@@ -123,3 +123,9 @@ topic:
   - deepin-community
   integrate_milestone: "V23-Beta3"
   integrate_repo: "deepin-community/Repository-Integration"
+check_binaries:
+- repos:
+  - peeweep-test
+  - linuxdeepin
+  - deepin-community
+  check_binaries_re: 'debian/source/include-binaries|.*\.so(\.\d+)?|.*\.signed'
