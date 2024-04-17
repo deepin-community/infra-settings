@@ -1,0 +1,78 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import base64
+import requests
+
+REPO_OWNER = os.environ.get("REPO_OWNER", "peeweep-test")
+REPO_NAME = os.environ.get("REPO_NAME", "dtkcommon")
+PULL_NUMBER = os.environ.get("PULL_NUMBER", "10")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+PULL_PULL_SHA = os.environ.get("PULL_PULL_SHA", "c1988df6f5bc881854057a5573f3b16bf3a03e21")
+HOLD_VERSION_ISSUE = 'https://github.com/deepin-community/infra-settings/issues/134'
+HOLD_VERSION_ISSUE_API = 'https://api.github.com/repos/deepin-community/infra-settings/issues/134'
+
+if not GITHUB_TOKEN:
+    print("请设置环境变量 GITHUB_TOKEN")
+    sys.exit(1)
+
+headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+
+def read_changelog():
+    version = ""
+    rawurl = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/debian/changelog?ref={PULL_PULL_SHA}'
+    res = requests.get(rawurl.replace("+", "%2B"), headers=headers)
+    if res.status_code == 200:
+        content = str(base64.b64decode(res.json()["content"]), encoding='utf-8')
+        line = content.split("\n")[0]
+        lineinfo = line.split(" ")
+        if len(lineinfo) > 1 :
+            version = lineinfo[1].replace("(", "").replace(")", "")
+
+    return version
+
+
+def need_hold_version():
+    need_hold = False
+    new_version = read_changelog()
+    response = requests.get(HOLD_VERSION_ISSUE_API, headers=headers)
+    if new_version != "" and response.status_code == 200:
+        issue = response.json()
+        body = issue['body']
+        lines = body.split('\n')
+        # 解析表格数据，查询组建是否在表格中
+        for line in lines:
+            if line.startswith('|'):
+                lineinfo = line.split('|')
+                if len(lineinfo) == 6:
+                    hold_name = lineinfo[3]
+                    hold_version = lineinfo[4]
+                    if REPO_NAME in hold_name or hold_name in REPO_NAME:
+                        if hold_version != new_version:
+                            need_hold = True
+                            print(f"{REPO_NAME} need hold version: {hold_version}, now version is {new_version}")
+                            break
+
+    return need_hold
+
+if need_hold_version():
+    url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{PULL_NUMBER}/comments"
+    comment_body = f"/hold\n该组件版本被锁定，详情见"
+
+    holded = False
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        comments = response.json()
+        for comment in comments:
+            body = comment['body']
+            #print(body)
+            if comment_body in body:
+                print(f"Found comment: '{comment_body}'")
+                holded = True
+    if not holded:
+        comment_body = comment_body + ": " + HOLD_VERSION_ISSUE
+        response = requests.post(url, json={"body": comment_body}, headers=headers)
+        if response.status_code != 200 and response.status_code != 201:
+            print("评论失败，错误信息：", response.text)
+            sys.exit(1)

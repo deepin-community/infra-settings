@@ -1,0 +1,99 @@
+presubmits:
+  peeweep-test:
+    - name: hold-version-check
+      decorate: false
+      always_run: false
+      run_if_changed: "debian/changelog"
+      labels:
+        app: hold-version-check
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+          - ip: 10.20.64.82
+            hostnames:
+              - api.github.com
+          - ip: 10.20.64.83
+            hostnames:
+              - github.githubassets.com
+          - ip: 10.20.64.84
+            hostnames:
+              - raw.githubusercontent.com
+          - ip: 10.20.64.85
+            hostnames:
+              - collector.github.com
+          - ip: 10.20.64.86
+            hostnames:
+              - avatars.githubusercontent.com
+        containers:
+          - name: hold-version-check
+            image: 'hub.deepin.com/prow/hold-version-check:latest'
+            command:
+              - /entrypoint
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: cert
+      annotations:
+        testgrid-num-failures-to-alert: '6'
+        testgrid-alert-stale-results-hours: '12'
+        testgrid-dashboards: sig-deepin-cicd
+        testgrid-tab-name: hold-version-check
+        testgrid-alert-email: hudeng@deepin.org
+        description: >-
+          Runs Prow hold-version-check to config and trigger obs ci, and use canal
+          return obs ci build job status.
+  deepin-community:
+    - name: hold-version-check
+      decorate: false
+      always_run: false
+      run_if_changed: "debian/changelog"
+      labels:
+        app: hold-version-check
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+          - ip: 10.20.64.82
+            hostnames:
+              - api.github.com
+          - ip: 10.20.64.83
+            hostnames:
+              - github.githubassets.com
+          - ip: 10.20.64.84
+            hostnames:
+              - raw.githubusercontent.com
+          - ip: 10.20.64.85
+            hostnames:
+              - collector.github.com
+          - ip: 10.20.64.86
+            hostnames:
+              - avatars.githubusercontent.com
+        containers:
+          - name: hold-version-check
+            image: 'hub.deepin.com/prow/hold-version-check:latest'
+            command:
+              - /entrypoint
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: cert
+      annotations:
+        testgrid-num-failures-to-alert: '6'
+        testgrid-alert-stale-results-hours: '12'
+        testgrid-dashboards: sig-deepin-cicd
+        testgrid-tab-name: hold-version-check
+        testgrid-alert-email: hudeng@deepin.org
+        description: >-
+          Runs Prow hold-version-check to config and trigger obs ci, and use canal
+          return obs ci build job status.
