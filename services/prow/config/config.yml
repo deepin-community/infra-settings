@@ -193,9 +193,6 @@ tide:
         - do-not-merge/release-note-label-needed
         - do-not-merge/work-in-progress
         - needs-rebase
-      orgs:
-        - peeweep-test
-        - deepin-community
       repos:
         - linuxdeepin/dtk
         - linuxdeepin/dtkcommon
@@ -203,21 +200,6 @@ tide:
         - linuxdeepin/dtkgui
         - linuxdeepin/dtkwidget
         - linuxdeepin/dtkdeclarative
-    - author: deepin-community-ci-bot
-      labels:
-        - skip-review
-      missingLabels:
-        - do-not-merge
-        - do-not-merge/blocked-paths
-        - do-not-merge/contains-merge-commits
-        - do-not-merge/hold
-        - do-not-merge/invalid-commit-message
-        - do-not-merge/invalid-owners-file
-        - do-not-merge/release-note-label-needed
-        - do-not-merge/work-in-progress
-        - needs-rebase
-      repos:
-        - deepin-community/SIG
   merge_method:
     peeweep-test: rebase
     deepin-community: rebase
