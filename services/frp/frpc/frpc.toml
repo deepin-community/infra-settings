@@ -1,0 +1,11 @@
+serverAddr = ""
+serverPort = 7000
+auth.method = "token"
+auth.token = ""
+
+[[proxies]]
+name = "githubhook"
+type = "tcp"
+localIP = "hook.prow.svc.cluster.local"
+localPort = 8888
+remotePort = 8089
