@@ -1,0 +1,41 @@
+From 272ca221acfe506019d27c1d37795efcc6532599 Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Fri, 26 Apr 2024 05:50:26 +0000
+Subject: [PATCH] feat: commit version update timestamp
+
+by add new changelog entry
+---
+ TarSCM/archive.py | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/TarSCM/archive.py b/TarSCM/archive.py
+index 144df89..a0677c1 100644
+--- a/TarSCM/archive.py
++++ b/TarSCM/archive.py
+@@ -364,8 +364,22 @@ class Gbp(BaseArchive):
+                     logging.debug("Setting version to %s", version)
+                     # gbp by default complains about uncommitted changes
+                     command.append("--git-ignore-new")
+-                    lines[0] = re.sub(r'^(.+) \(.+\) (.+)',
+-                                      r'\1 (%s) \2' % version, lines[0])
++                    if "+u00" in version:
++                        import datetime
++                        logging.info("commit version: %s, add new changelog entry", version)
++                        current_time = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S %z")
++                        news = []
++                        news.append(re.sub(r'^(.+) \(.+\) (.+)',
++                                    r'\1 (%s) \2' % version, lines[0]))
++                        news.append("\n")
++                        news.append("  * commit update")
++                        news.append("\n\n")
++                        news.append(" -- Deepin Packages Builder <packages@deepin.org>  " + current_time)
++                        news.append("\n\n")
++                        lines = news + lines
++                    else:
++                        lines[0] = re.sub(r'^(.+) \(.+\) (.+)',
++                                          r'\1 (%s) \2' % version, lines[0])
+                     cl.write("".join(lines))
+ 
+         logging.debug("Running in %s", scm_object.clone_dir)
+-- 
+2.35.3
