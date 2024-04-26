@@ -1,0 +1,92 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import requests
+
+repo_owner = os.environ.get("REPO_OWNER", "linuxdeepin")
+repo_name = os.environ.get("REPO_NAME", "dtk")
+pr_number = os.environ.get("PULL_NUMBER", "1")
+github_token = os.environ.get("GITHUB_TOKEN")
+codegeex_token = os.environ.get("CODEGEEX_TOKEN")
+codegeex_taskid = os.environ.get("CODEGEEX_TASKID")
+
+if not github_token:
+    print("请设置环境变量 GITHUB_TOKEN")
+    sys.exit(1)
+
+if not codegeex_token:
+    print("请设置环境变量 CODEGEEX_TOKEN")
+    sys.exit(1)
+
+if not codegeex_taskid:
+    print("请设置环境变量 CODEGEEX_TASKID")
+    sys.exit(1)
+
+try:
+    # 获取patch数据的URL
+    patch_data_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pr_number}"
+    headers = {"Authorization": f"token {github_token}"}
+    response = requests.get(patch_data_url, headers=headers)
+    if not response.ok:
+        raise Exception("获取pr的patch地址错误: " + response.text)
+    pr_data = response.json()
+    patch_data_url = pr_data["diff_url"]
+
+    # 获取patch数据的内容
+    response = requests.get(patch_data_url)
+    patch_content = response.text
+    if not response.ok:
+        raise Exception("获取pr的patch地址错误: " + patch_content)
+
+    # codegeex patch review
+    codegeex_url = 'https://codegeex.cn/prod/code/chatCodeSseV3/chat?stream=false'
+    codegeex_headers = {
+        'code-token' : codegeex_token,
+        'Content-Type': 'application/json'
+    }
+
+    review_data = {
+        "command":"review",
+        "code": patch_content,
+        'talkId': codegeex_taskid,
+        'locale' : "zh",
+        "model": "codegeex-lite",
+        "max_new_tokens": 64,
+        "lang": "Python",
+    }
+
+    review_response = requests.post(codegeex_url, headers=codegeex_headers, json=review_data)
+    if not review_response.ok:
+        raise Exception("获取pr的patch review结果失败: " + review_response.text)
+
+    review_result = review_response.json()["text"]
+
+    # 获取现有的评论列表
+    url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pr_number}/comments'
+    response = requests.get(url, headers=headers)
+    if not response.ok:
+        raise Exception("pr评论获取失败: " + response.text)
+    comments = response.json()
+
+    # 查找是否已存在包含"deepin pr auto review"的评论
+    existing_comment = None
+    for comment in comments:
+        if "deepin pr auto review" in comment['body']:
+            existing_comment = comment
+            break
+
+    # 如果找到了现有评论，则更新评论内容；否则创建新评论
+    comment_body = "### deepin pr auto review\n" + review_result
+    if existing_comment:
+        comment_id = existing_comment['id']
+        comment_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues/comments/{comment_id}'
+        response = requests.delete(comment_url, json={'body': comment_body}, headers=headers)
+        if not response.ok:
+            raise Exception("pr评论更新review结果失败: " + response.text)
+
+    response = requests.post(url, json={'body': comment_body}, headers=headers)
+    if not response.ok:
+        raise Exception("pr评论review结果失败: " + response.text)
+except Exception as e:
+    print(e)
