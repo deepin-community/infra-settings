@@ -1,0 +1,181 @@
+presubmits:
+  peeweep-test:
+    - name: github-pr-review-ci
+      decorate: false
+      always_run: true
+      labels:
+        app: pr-review-ci
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+          - ip: 10.20.64.82
+            hostnames:
+              - api.github.com
+          - ip: 10.20.64.83
+            hostnames:
+              - github.githubassets.com
+          - ip: 10.20.64.84
+            hostnames:
+              - raw.githubusercontent.com
+          - ip: 10.20.64.84
+            hostnames:
+              - patch-diff.githubusercontent.com
+          - ip: 10.20.64.85
+            hostnames:
+              - collector.github.com
+          - ip: 10.20.64.86
+            hostnames:
+              - avatars.githubusercontent.com
+        containers:
+          - name: github-pr-review-ci
+            image: 'hub.deepin.com/prow/pr-review:latest'
+            command:
+              - /entrypoint
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: cert
+              - name: CODEGEEX_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: codegeex
+                    key: token
+              - name: CODEGEEX_TASKID
+                valueFrom:
+                  secretKeyRef:
+                    name: codegeex
+                    key: taskid
+      annotations:
+        testgrid-num-failures-to-alert: '6'
+        testgrid-alert-stale-results-hours: '12'
+        testgrid-dashboards: sig-deepin-cicd
+        testgrid-tab-name: pr-review-ci
+        testgrid-alert-email: hudeng@deepin.org
+        description: >-
+          Runs Prow pr-review-ci review pr by use codegeex.
+  linuxdeepin:
+    - name: github-pr-review-ci
+      decorate: false
+      always_run: true
+      labels:
+        app: pr-review-ci
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+          - ip: 10.20.64.82
+            hostnames:
+              - api.github.com
+          - ip: 10.20.64.83
+            hostnames:
+              - github.githubassets.com
+          - ip: 10.20.64.84
+            hostnames:
+              - raw.githubusercontent.com
+          - ip: 10.20.64.84
+            hostnames:
+              - patch-diff.githubusercontent.com
+          - ip: 10.20.64.85
+            hostnames:
+              - collector.github.com
+          - ip: 10.20.64.86
+            hostnames:
+              - avatars.githubusercontent.com
+        containers:
+          - name: github-pr-review-ci
+            image: 'hub.deepin.com/prow/pr-review:latest'
+            command:
+              - /entrypoint
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: cert
+              - name: CODEGEEX_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: codegeex
+                    key: token
+              - name: CODEGEEX_TASKID
+                valueFrom:
+                  secretKeyRef:
+                    name: codegeex
+                    key: taskid
+      annotations:
+        testgrid-num-failures-to-alert: '6'
+        testgrid-alert-stale-results-hours: '12'
+        testgrid-dashboards: sig-deepin-cicd
+        testgrid-tab-name: pr-review-ci
+        testgrid-alert-email: hudeng@deepin.org
+        description: >-
+          Runs Prow pr-review-ci review pr by use codegeex.
+  deepin-community/kernel:
+    - name: github-pr-review-ci
+      decorate: false
+      always_run: true
+      labels:
+        app: pr-review-ci
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+          - ip: 10.20.64.82
+            hostnames:
+              - api.github.com
+          - ip: 10.20.64.83
+            hostnames:
+              - github.githubassets.com
+          - ip: 10.20.64.84
+            hostnames:
+              - raw.githubusercontent.com
+          - ip: 10.20.64.84
+            hostnames:
+              - patch-diff.githubusercontent.com
+          - ip: 10.20.64.85
+            hostnames:
+              - collector.github.com
+          - ip: 10.20.64.86
+            hostnames:
+              - avatars.githubusercontent.com
+        containers:
+          - name: github-pr-review-ci
+            image: 'hub.deepin.com/prow/pr-review:latest'
+            command:
+              - /entrypoint
+            env:
+              - name: GITHUB_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: github-token
+                    key: cert
+              - name: CODEGEEX_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: codegeex
+                    key: token
+              - name: CODEGEEX_TASKID
+                valueFrom:
+                  secretKeyRef:
+                    name: codegeex
+                    key: taskid
+      annotations:
+        testgrid-num-failures-to-alert: '6'
+        testgrid-alert-stale-results-hours: '12'
+        testgrid-dashboards: sig-deepin-cicd
+        testgrid-tab-name: pr-review-ci
+        testgrid-alert-email: hudeng@deepin.org
+        description: >-
+          Runs Prow pr-review-ci review pr by use codegeex.
