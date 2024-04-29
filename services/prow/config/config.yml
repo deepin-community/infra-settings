@@ -175,6 +175,12 @@ tide:
         - linuxdeepin/deepin-unioncode
         - linuxdeepin/qt5integration
         - linuxdeepin/qt5platform-plugins
+        - linuxdeepin/dtk6core
+        - linuxdeepin/dtk6gui
+        - linuxdeepin/dtk6widget
+        - linuxdeepin/dtk6declarative
+        - linuxdeepin/qt6integration
+        - linuxdeepin/qt6platform-plugins
       labels:
         - approved
       missingLabels:
@@ -204,6 +210,12 @@ tide:
         - linuxdeepin/dtkdeclarative
         - linuxdeepin/qt5integration
         - linuxdeepin/qt5platform-plugins
+        - linuxdeepin/dtk6core
+        - linuxdeepin/dtk6gui
+        - linuxdeepin/dtk6widget
+        - linuxdeepin/dtk6declarative
+        - linuxdeepin/qt6integration
+        - linuxdeepin/qt6platform-plugins
   merge_method:
     peeweep-test: rebase
     deepin-community: rebase
