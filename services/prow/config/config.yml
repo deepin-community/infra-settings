@@ -220,6 +220,8 @@ tide:
     peeweep-test: rebase
     deepin-community: rebase
     linuxdeepin: rebase
+  context_options:
+    skip-unknown-contexts: true
 obscijobs:
   - repos:
       - linuxdeepin
