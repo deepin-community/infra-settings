@@ -11,6 +11,7 @@ plugins:
     - skip
     - topic
     - lifecycle  # Allow /lifecycle stale
+    - deepin-help
   deepin-community:
     plugins:
     - approve
@@ -31,6 +32,7 @@ plugins:
     - topic
     - skip
     - lifecycle  # Allow /lifecycle stale
+    - deepin-help
   peeweep-test:
     plugins:
     - approve
@@ -53,6 +55,7 @@ plugins:
     - topic
     - skip
     - lifecycle  # Allow /lifecycle stale
+    - deepin-help
 approve:
 - repos:
   - linuxdeepin/dtk
@@ -129,3 +132,12 @@ check_binaries:
   - linuxdeepin
   - deepin-community
   check_binaries_re: 'debian/source/include-binaries|.*\.so(\.\d+)?|.*\.signed'
+deepin_help:
+  help_commands_summary: |
+                        常用命令：
+                        - `/integrate` 集成单个包
+                        - `/topic  $name` 添加pr到topic
+                        - `/integr-topic $name` 集成topic，只需要在任意一个pr中输入一次即可，topic有更新在重新刷一次
+                        - `/merge` 没有开机器人自动合并的用这个合并代码
+                        - `/retest` 重试出错的ci任务，`/test all` 执行所有ci任务，`/test $name`执行指定的ci任务
+                        - `/check obs` linuxdeepin组织下专属命令，应对该组织下obs ci任务未成功执行的情况，执行后仍然有问题可以有节奏的关闭-->打开pr一下，还是有问题可以急call管理员
