@@ -44,7 +44,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  obs-server: >
+  obs-server: |
     #
 
     # NOTE: all these options can be also declared in /etc/buildhost.config on
@@ -970,7 +970,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  BSConfig.pm: >
+  BSConfig.pm: |
     #
     # Copyright (c) 2006, 2007 Michael Schroeder, Novell Inc.
     #
@@ -1037,7 +1037,7 @@ data:
       http://obs-backend-larv.cicd.getdeepin.org,
       http://obs-backend-test.cicd.getdeepin.org,
       http://obs-backend-other.cicd.getdeepin.org,
-      http://obs-backend-vioken.cicd.getdeepin.org,
+      http://obs-backend-v25.cicd.getdeepin.org,
     ");
 
     our $redisserver = "redis://127.0.0.1";
@@ -1196,6 +1196,7 @@ data:
       'deepin:Develop:main'    => 'backend-develop-main',
       'home:golf66:larv'    => 'backend-larv',
       'home:golf66'    => 'backend-test',
+      'v25'   => 'backend-v25',
       '.*'    => 'backend-other',
     ];
 
@@ -1207,6 +1208,7 @@ data:
       'backend-larv' => 'http://obs-backend-larv.cicd.getdeepin.org',
       'backend-test' => 'http://obs-backend-test.cicd.getdeepin.org',
       'backend-other' => 'http://obs-backend-other.cicd.getdeepin.org',
+      'backend-v25' => 'http://obs-backend-v25.cicd.getdeepin.org',
       #'backend-vioken' => 'http://obs-backend-vioken.cicd.getdeepin.org',
     };
 
@@ -1294,7 +1296,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  options.yml: >
+  options.yml: |
     #
 
     # This file contains the default configuration of the Open Build Service
