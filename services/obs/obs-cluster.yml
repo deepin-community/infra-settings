@@ -1002,7 +1002,7 @@ data:
     # IP corresponding to hostname (only used for $ipaccess); fallback to localhost since inet_aton may fail to resolve at shutdown.
     my $ip = quotemeta inet_ntoa(inet_aton($hostname) || inet_aton("localhost"));
 
-    my $frontend = "api"; # FQDN of the WebUI/API server if it's not $hostname
+    my $frontend = "src"; # FQDN of the WebUI/API server if it's not $hostname
     #my $backend = "172.25.6.13";
 
     # If defined, restrict access to the backend servers (bs_repserver, bs_srcserver, bs_service)
