@@ -667,6 +667,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: OBS_CLIENT_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
         resources:
           requests:
             cpu: '64'
@@ -737,6 +742,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: OBS_CLIENT_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
         resources:
           requests:
             cpu: '64'

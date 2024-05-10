@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: server-config-test
+  name: server-config-v25
 data:
   obs-server: |
     #
@@ -151,10 +151,10 @@ data:
     ## Default:     ""
     ## Config:      OBS
     #
-    # A label can be used to build spetestfic packages only on dedicated hosts.
+    # A label can be used to build specific packages only on dedicated hosts.
     # For example for benchmarking.
     #
-    #OBS_WORKER_HOSTLABELS=""
+    # OBS_WORKER_HOSTLABELS=""
 
     ## Path:        Applications/OBS
     ## Description: can be used to define a security level of the worker
@@ -239,7 +239,7 @@ data:
     # for KVM, you have to create with (example for openSUSE 11.2):
     #
     # export rootfstype="ext4"
-    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_ptest virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
+    # mkinitrd -d /dev/null -m "ext4 binfmt_misc virtio_pci virtio_blk" -k vmlinuz-2.6.31.12-0.2-default -i initrd-2.6.31.12-0.2-default-obs_worker
     #
     # a working initrd file which includes virtio and binfmt_misc for OBS in order to work fine
     #
@@ -273,7 +273,7 @@ data:
     ## Config:      OBS
     #
     #
-    # Buildflag vmfstype may overwrite this for a spetestfic job.
+    # Buildflag vmfstype may overwrite this for a specific job.
     OBS_VM_DISK_AUTOSETUP_FILESYSTEM="ext3"
 
     ## Path:        Applications/OBS
@@ -296,7 +296,7 @@ data:
     OBS_VM_USE_TMPFS=""
 
     ## Path:        Applications/OBS
-    ## Description: Spetestfy custom options for VM handler
+    ## Description: Specify custom options for VM handler
     ## Type:        string
     ## Default:     ""
     ## Config:      OBS
@@ -312,7 +312,7 @@ data:
     ## Config:      OBS
     #
     #
-    OBS_INSTANCE_MEMORY="65536"
+    OBS_INSTANCE_MEMORY=""
 
     ## Path:        Applications/OBS
     ## Description: Enable storage auto configuration
@@ -388,7 +388,7 @@ data:
     ## Default:     ""
     ## Config:      OBS
     #
-    # This is a hook for doing spetestal things in your setup at boot time
+    # This is a hook for doing special things in your setup at boot time
     #
     OBS_WORKER_SCRIPT_URL=""
 
@@ -487,7 +487,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: obs
-  name: worker-config-test
+  name: worker-config-v25
 data:
   obs-worker: |
     # Nice level
@@ -510,7 +510,7 @@ data:
     #
     #
 
-    OBS_REPO_SERVERS="obs-backend-test.cicd.getdeepin.org"
+    OBS_REPO_SERVERS="backend-v25:5252"
 
     ## Path:        Applications/OBS
     ## Description: define number of build instances
@@ -635,7 +635,7 @@ data:
     #OBS_VM_KERNEL="/srv/obs/worker/vmlinuz-5.3.18-57-default"
     #OBS_VM_INITRD="/srv/obs/worker/initrd-5.3.18-57-default"
 
-    OBS_WORKER_HOSTLABELS="HOSTLARGE"
+    OBS_WORKER_HOSTLABELS="$NODENAME"
     #OBS_VM_USE_TMPFS="yes"
     #OBS_WORKER_TEST_MODE="yes"
 
@@ -646,7 +646,7 @@ data:
     ## Config:      OBS
     #
     #
-    OBS_WORKER_BINARIES_PROXY="http://backend-test:5254"
+    OBS_WORKER_BINARIES_PROXY="http://backend-v25:5254"
 
 ---
 # Obs Worker Amd64 StatefulSet
@@ -654,22 +654,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: obs
-  name: k3s-worker-test-amd
+  name: k3s-worker-v25-amd
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: worker-test-amd
+      app: worker-v25-amd
   template:
     metadata:
       labels:
-        app: worker-test-amd
+        app: worker-v25-amd
     spec:
       nodeSelector:
         kubernetes.io/arch: amd64
       containers:
-      - name: k3s-worker-test-amd
-        image: hub.deepin.com/k3s/obs/worker:latest
+      - name: k3s-worker-v25-amd
+        image: hub.deepin.com/k3s/obs/worker:amd64
         imagePullPolicy: Always
         env:
         - name: NODENAME
@@ -683,13 +683,13 @@ spec:
               apiVersion: v1
               fieldPath: status.podIP
         volumeMounts:
-        - name: server-config-test
+        - name: server-config-v25
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
-        - name: worker-config-test
+        - name: worker-config-v25
           mountPath: /etc/sysconfig/obs-worker
           subPath: obs-worker
-        - name: worker-data-test
+        - name: worker-data-v25
           mountPath: /srv/obs
         - name: worker-cache
           mountPath: /srv/obscache
@@ -699,19 +699,19 @@ spec:
             add:
               - NET_ADMIN
       volumes:
-      - name: server-config-test
+      - name: server-config-v25
         configMap:
-          name: server-config-test
+          name: server-config-v25
           items:
           - key: obs-server
             path: obs-server
-      - name: worker-config-test
+      - name: worker-config-v25
         configMap:
-          name: worker-config-test
+          name: worker-config-v25
           items:
           - key: obs-worker
             path: obs-worker
-      - name: worker-data-test
+      - name: worker-data-v25
         emptyDir: {}
       - name: worker-cache
         hostPath:
@@ -730,22 +730,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: obs
-  name: k3s-worker-test-arm
+  name: k3s-worker-v25-arm
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: worker-test-arm
+      app: worker-v25-arm
   template:
     metadata:
       labels:
-        app: worker-test-arm
+        app: worker-v25-arm
     spec:
       nodeSelector:
         kubernetes.io/arch: arm64
       containers:
-      - name: k3s-worker-test-arm
-        image: hub.deepin.com/k3s/obs/worker:arm64-latest
+      - name: k3s-worker-v25-arm
+        image: hub.deepin.com/k3s/obs/worker:arm64
         imagePullPolicy: Always
         env:
         - name: NODENAME
@@ -759,13 +759,13 @@ spec:
               apiVersion: v1
               fieldPath: status.podIP
         volumeMounts:
-        - name: server-config-test
+        - name: server-config-v25
           mountPath: /etc/sysconfig/obs-server
           subPath: obs-server
-        - name: worker-config-test
+        - name: worker-config-v25
           mountPath: /etc/sysconfig/obs-worker
           subPath: obs-worker
-        - name: worker-data-test
+        - name: worker-data-v25
           mountPath: /srv/obs
         - name: worker-cache
           mountPath: /srv/obscache
@@ -775,19 +775,19 @@ spec:
             add:
               - NET_ADMIN
       volumes:
-      - name: server-config-test
+      - name: server-config-v25
         configMap:
-          name: server-config-test
+          name: server-config-v25
           items:
           - key: obs-server
             path: obs-server
-      - name: worker-config-test
+      - name: worker-config-v25
         configMap:
-          name: worker-config-test
+          name: worker-config-v25
           items:
           - key: obs-worker
             path: obs-worker
-      - name: worker-data-test
+      - name: worker-data-v25
         emptyDir: {}
       - name: worker-cache
         hostPath:

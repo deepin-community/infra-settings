@@ -675,7 +675,13 @@ spec:
         - name: NODENAME
           valueFrom:
             fieldRef:
+              apiVersion: v1
               fieldPath: spec.nodeName
+        - name: OBS_CLIENT_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
         volumeMounts:
         - name: server-config-other
           mountPath: /etc/sysconfig/obs-server
@@ -746,6 +752,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: OBS_CLIENT_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
         volumeMounts:
         - name: server-config-other
           mountPath: /etc/sysconfig/obs-server
