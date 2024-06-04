@@ -1,0 +1,62 @@
+postsubmits:
+  linuxdeepin:
+    - name: sync-to-gitlab
+      always_run: true
+      labels:
+        app: sync-to-gitlab
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+          - ip: 10.0.32.61
+            hostnames:
+              - gitlabwh.uniontech.com
+        containers:
+          - name: sync-to-gitlab
+            image: ghcr.cicd.getdeepin.org/myml/git-sync:main
+            imagePullPolicy: Always
+            command:
+              - sh
+            args:
+              - -c
+              - "/git-sync.sh https://github.com/linuxdeepin/$REPO_NAME.git https://oauth2:$TOKEN@gitlabwh.uniontech.com/wuhan/deepin/github-mirrors/$REPO_NAME.git"
+            env:
+              - name: SYNC_BRANCH_PATTERN
+                value: "main master develop/* release/*"
+              - name: TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: gitlab-token-wurongjie
+                    key: TOKEN
+  deepin-community:
+    - name: sync-to-gitlab
+      always_run: true
+      labels:
+        app: sync-to-gitlab
+      spec:
+        nodeSelector:
+          kubernetes.io/arch: amd64
+        hostAliases:
+          - ip: 10.20.64.81
+            hostnames:
+              - github.com
+        containers:
+          - name: sync-to-gitlab
+            image: ghcr.cicd.getdeepin.org/myml/git-sync:main
+            imagePullPolicy: Always
+            command:
+              - sh
+            args:
+              - -c
+              - "/git-sync.sh https://github.com/deepin-community/$REPO_NAME.git https://oauth2:$TOKEN@gitlabwh.uniontech.com/wuhan/deepin/github-mirrors/deepin-community-mirrors/$REPO_NAME.git"
+            env:
+              - name: SYNC_BRANCH_PATTERN
+                value: "master develop/* release/*"
+              - name: TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: gitlab-token-wurongjie
+                    key: TOKEN
