@@ -12,8 +12,12 @@ RUN zypper mr -da; zypper ar -cfg 'https://mirrors.tuna.tsinghua.edu.cn/opensuse
 RUN zypper ar -f -G https://download.opensuse.org/repositories/OBS:/Server:/Unstable/15.5/OBS:Server:Unstable.repo; \
   zypper ar -f -G https://download.opensuse.org/repositories/openSUSE:/Tools/15.5/openSUSE:Tools.repo; \
   zypper -n install git-buildpackage patch fakeroot obs-service-gbp obs-service-set_version obs-server vim xz \
-  obs-service-cargo_vendor cargo sudo go1.18 python3-libarchive-c gzip bzip2; zypper clean;
+  obs-service-cargo_vendor cargo sudo go1.18 python3-libarchive-c gzip bzip2;
 
+RUN zypper ar -f -G https://download.opensuse.org/repositories/home:/myml/15.5/home:myml.repo
+RUN zypper --gpg-auto-import-keys ref
+RUN zypper -n install patch wget linglong-builder
+RUN zypper clean
 # setup obs-src configuration
 RUN mkdir -p /srv/backup/; \
   mv /usr/lib/obs/server/BSConfig.pm /srv/backup/BSConfig.pm.bak; \
