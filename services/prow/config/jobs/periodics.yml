@@ -1,0 +1,116 @@
+periodics:
+  - name: ci-triage-robot-close-prs
+    interval: 6h
+    decorate: true
+    annotations:
+      description: Closes rotten PRs after 90d of inactivity
+      testgrid-tab-name: close-prs
+    spec:
+      containers:
+        - image: hub.deepin.com/prow/commenter
+          command:
+            - commenter
+          args:
+            - |-
+              --query=org:linuxdeepin
+              org:deepin-community
+              org:peeweep-test
+              is:pr
+              -label:lifecycle/frozen
+              label:lifecycle/rotten
+            - --updated=2160h
+            - --token=/etc/github-token/token
+            - --endpoint=http://ghproxy
+            - |-
+              --comment=The Deepin project currently lacks enough active contributors to adequately respond to all issues and PRs.
+
+              This bot triages PRs according to the following rules:
+              - After 270d of inactivity, `lifecycle/stale` is applied
+              - After 90d of inactivity since `lifecycle/stale` was applied, `lifecycle/rotten` is applied
+              - After 90d of inactivity since `lifecycle/rotten` was applied, the PR is closed
+
+              You can:
+              - Reopen this PR with `/reopen`
+              - Mark this PR as fresh with `/remove-lifecycle rotten`
+              - Offer to help out with [Issue Triage][1]
+
+              /close
+
+            - --template
+            - --ceiling=10
+            - --confirm
+          volumeMounts:
+            - name: token
+              mountPath: /etc/github-token
+      volumes:
+        - name: token
+          secret:
+            secretName: github-token
+
+  - name: ci-branchprotector
+    cron: 0 0 * * 6
+    labels:
+      app: branchprotector
+    decorate: true
+    decoration_config:
+      timeout: 72h
+    extra_refs:
+      - org: deepin-community
+        repo: infra-settings
+        base_ref: master
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      hostAliases:
+        - ip: 10.20.64.81
+          hostnames:
+            - github.com
+        - ip: 10.20.64.82
+          hostnames:
+            - api.github.com
+        - ip: 10.20.64.83
+          hostnames:
+            - github.githubassets.com
+        - ip: 10.20.64.84
+          hostnames:
+            - raw.githubusercontent.com
+        - ip: 10.20.64.85
+          hostnames:
+            - collector.github.com
+        - ip: 10.20.64.86
+          hostnames:
+            - avatars.githubusercontent.com
+      containers:
+        - name: branchprotector
+          image: hub.deepin.com/prow/branchprotector
+          command:
+            - branchprotector
+          args:
+            - "--config-path=/etc/config/config.yaml"
+            - "--github-token-path=/etc/github/cert"
+            - "--confirm"
+            - "--github-endpoint=http://ghproxy"
+            - "--github-endpoint=https://api.github.com"
+          volumeMounts:
+            - name: github-token
+              mountPath: /etc/github
+              readOnly: true
+            - name: config
+              mountPath: /etc/config
+              readOnly: true
+      volumes:
+        - name: github-token
+          secret:
+            secretName: github-token
+        - name: config
+          configMap:
+            name: config
+    annotations:
+      testgrid-num-failures-to-alert: "6"
+      testgrid-alert-stale-results-hours: "12"
+      testgrid-dashboards: sig-testing-misc
+      testgrid-tab-name: branchprotector
+      testgrid-alert-email: hudeng@deepin.org
+      description: >-
+        Runs Prow branchprotector to apply configured GitHub status context
+        requirements and merge policies.
