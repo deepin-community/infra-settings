@@ -23,7 +23,7 @@ configOverride:
 # Installs a debugging toolbox deployment
 toolbox:
   # -- Enable Ceph debugging pod deployment. See [toolbox](../Troubleshooting/ceph-toolbox.md)
-  enabled: false
+  enabled: true
   # -- Toolbox image, defaults to the image used by the Ceph cluster
   image: #quay.io/ceph/ceph:v18.2.2
   # -- Toolbox tolerations
@@ -50,7 +50,7 @@ toolbox:
 monitoring:
   # -- Enable Prometheus integration, will also create necessary RBAC rules to allow Operator to create ServiceMonitors.
   # Monitoring requires Prometheus to be pre-installed
-  enabled: false
+  enabled: true
   # -- Whether to create the Prometheus rules for Ceph alerts
   createPrometheusRules: false
   # -- The namespace in which to create the prometheus rules, if different from the rook cluster namespace.
@@ -94,7 +94,7 @@ cephClusterSpec:
     # versions running within the cluster. See tags available at https://hub.docker.com/r/ceph/ceph/tags/.
     # If you want to be more precise, you can always use a timestamp tag such as quay.io/ceph/ceph:v18.2.2-20240311
     # This tag might not contain a new Ceph version, just security fixes from the underlying operating system, which will reduce vulnerabilities
-    image: quay.io/ceph/ceph:v18.2.2
+    image: quay.cicd.getdeepin.org/ceph/ceph:v18.2.2
     # Whether to allow unsupported versions of Ceph. Currently `quincy`, and `reef` are supported.
     # Future versions such as `squid` (v19) would require this to be set to `true`.
     # Do not set to true in production.
@@ -155,7 +155,7 @@ cephClusterSpec:
     # port: 8443
     # Serve the dashboard using SSL (if using ingress to expose the dashboard and `ssl: true` you need to set
     # the corresponding "backend protocol" annotation(s) for your ingress controller of choice)
-    ssl: true
+    ssl: false
 
   # Network configuration, see: https://github.com/rook/rook/blob/v1.14.2/Documentation/CRDs/ceph-cluster-crd.md#network-configuration-settings
   network:
@@ -261,6 +261,23 @@ cephClusterSpec:
   #   osd:
   #   mgr:
   #   cleanup:
+  placement:
+    all:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: role
+              operator: In
+              values:
+              - storage-node
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node.kubernetes.io/unschedulable
+        operator: Exists
 
   # annotations:
   #   all:
@@ -354,8 +371,8 @@ cephClusterSpec:
     mgr: system-cluster-critical
 
   storage: # cluster level storage configuration and selection
-    useAllNodes: true
-    useAllDevices: true
+    useAllNodes: false
+    useAllDevices: false
     # deviceFilter:
     # config:
     #   crushRoot: "custom-root" # specify a non-default root label for the CRUSH map
@@ -376,6 +393,13 @@ cephClusterSpec:
     #     config: # configuration can be specified at the node level which overrides the cluster level config
     #   - name: "172.17.4.301"
     #     deviceFilter: "^sd."
+    nodes:
+      - name: "deepinci-amd7"
+        devices:
+          - name: "sda1"
+          - name: "sdb1"
+          - name: "sdc1"
+          - name: "sdd1"
 
   # The section for configuring management of daemon disruptions during upgrade or fencing.
   disruptionManagement:
@@ -416,7 +440,9 @@ cephClusterSpec:
 ingress:
   # -- Enable an ingress for the ceph-dashboard
   dashboard:
-    {}
+    host:
+      name: rook-admin.cicd.getdeepin.org
+      path: "/"
     # annotations:
     #   external-dns.alpha.kubernetes.io/hostname: dashboard.example.com
     #   nginx.ingress.kubernetes.io/rewrite-target: /ceph-dashboard/$2
@@ -607,7 +633,7 @@ cephObjectStores:
       # see https://github.com/rook/rook/blob/v1.14.2/Documentation/Storage-Configuration/Object-Storage-RGW/ceph-object-bucket-claim.md#storageclass for available configuration
       parameters:
         # note: objectStoreNamespace and objectStoreName are configured by the chart
-        region: us-east-1
+        region: cn-deepin-1
     ingress:
       # Enable an ingress for the ceph-objectstore
       enabled: false
