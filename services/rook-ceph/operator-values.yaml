@@ -479,37 +479,37 @@ csi:
 
   cephcsi:
     # -- Ceph CSI image repository
-    repository: quay.io/cephcsi/cephcsi
+    repository: quay.cicd.getdeepin.org/cephcsi/cephcsi
     # -- Ceph CSI image tag
-    tag: v3.11.0
+    tag: v3.10.0
 
   registrar:
     # -- Kubernetes CSI registrar image repository
-    repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+    repository: k8s.ketches.cn/sig-storage/csi-node-driver-registrar
     # -- Registrar image tag
     tag: v2.10.0
 
   provisioner:
     # -- Kubernetes CSI provisioner image repository
-    repository: registry.k8s.io/sig-storage/csi-provisioner
+    repository: k8s.ketches.cn/sig-storage/csi-provisioner
     # -- Provisioner image tag
     tag: v4.0.0
 
   snapshotter:
     # -- Kubernetes CSI snapshotter image repository
-    repository: registry.k8s.io/sig-storage/csi-snapshotter
+    repository: k8s.ketches.cn/sig-storage/csi-snapshotter
     # -- Snapshotter image tag
     tag: v7.0.1
 
   attacher:
     # -- Kubernetes CSI Attacher image repository
-    repository: registry.k8s.io/sig-storage/csi-attacher
+    repository: k8s.ketches.cn/sig-storage/csi-attacher
     # -- Attacher image tag
     tag: v4.5.0
 
   resizer:
     # -- Kubernetes CSI resizer image repository
-    repository: registry.k8s.io/sig-storage/csi-resizer
+    repository: k8s.ketches.cn/sig-storage/csi-resizer
     # -- Resizer image tag
     tag: v1.10.0
 
@@ -529,13 +529,13 @@ csi:
     # -- Enable CSIAddons
     enabled: false
     # -- CSIAddons sidecar image repository
-    repository: quay.io/csiaddons/k8s-sidecar
+    repository: quay.cicd.getdeepin.org/csiaddons/k8s-sidecar
     # -- CSIAddons sidecar image tag
     tag: v0.8.0
 
   nfs:
     # -- Enable the nfs csi driver
-    enabled: false
+    enabled: true
 
   topology:
     # -- Enable topology based provisioning
@@ -647,5 +647,4 @@ obcProvisionerNamePrefix:
 monitoring:
   # -- Enable monitoring. Requires Prometheus to be pre-installed.
   # Enabling will also create RBAC rules to allow Operator to create ServiceMonitors
-  enabled: false
-
+  enabled: true
