@@ -1515,7 +1515,7 @@ data:
     production:
       <<: *default
       # TODO: obs monitor页面服务状态刷新问题
-      memcached_host: 172.25.6.1
+      memcached_host: localhost
 
     test:
       <<: *default
@@ -1969,6 +1969,15 @@ spec:
         app: api
     spec:
       containers:
+        - image: 'memcached:latest'
+          imagePullPolicy: Always
+          name: memcached
+          ports:
+            - containerPort: 11211
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
         - image: 'hub.deepin.com/k3s/obs/api:latest'
           imagePullPolicy: Always
           name: api
@@ -2054,3 +2063,26 @@ spec:
     app: api
   sessionAffinity: None
   type: NodePort
+
+# Obs memcached Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  name: memcached
+  namespace: obs
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: memcached
+      port: 11211
+      protocol: TCP
+      targetPort: 11211
+  selector:
+    app: api
+  sessionAffinity: None
+  type: ClusterIP
