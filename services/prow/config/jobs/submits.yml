@@ -388,6 +388,9 @@ presubmits:
   linuxdeepin/dde-shell:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
+  linuxdeepin/dde-tray-loader:
+    - <<: *github-trigger-obs-ci
+    - <<: *github-pr-review-ci
   linuxdeepin:
     - <<: *github-pr-review-ci
 
