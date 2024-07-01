@@ -43,19 +43,35 @@ channel.queue_declare(queue=rabbitmq_queue, durable=args['durable'], arguments=a
 # 定义回调函数处理消息
 def callback(ch, method, properties, body):
     event = json.loads(body)
+    #print("接收到OBS事件: ", event)
     if event['table'] == "events" and event['database'] == "api_production":
-        #print("接收到OBS事件: ", event)
-        if len(event['data']) > 0:
+        sql = event['sql']
+        if sql and len(sql) > 0:
             #print("event_data: ", event['data'])
-            event_data = event['data'][0]
-            event_data_type = event_data['eventtype']
-            event_data_payload = json.loads(event_data['payload'])
+            pattern = r'INSERT INTO `(?P<table_name>\w+)` \((?P<columns>.*?)\) VALUES \((?P<values>.*?)\)'
+            match = re.search(pattern, sql)
+            if not match:
+                print(f"{sql} not match sql insert")
+                return
+            table_name = match.group('table_name')
+            columns = match.group('columns').split(', ')
+            values = match.group('values').split("', '")
+            print(f"表名： {table_name}")
+            print("列名：", columns)
+            print("值：", values)
+
+            event_data_type = str(values[0])
+            if "Event::Build" not in event_data_type:
+                print(f"{event_data_type} not support")
+                return
+            payload = '"' + str(values[1]) + '"'
+            event_data_payload = json.loads(json.loads(payload))
             project = event_data_payload.get('project', '')
             package = event_data_payload.get('package', '')
             repository = event_data_payload.get('repository', '')
             arch = event_data_payload.get('arch', '')
             # 同步构建状态到github commit
-            if "deepin:CI" in project and "Event::Build" in event_data_type:
+            if "deepin:CI" in project:
                 #print(f"Handle {project}/{package} {arch} {repository} build event: {event_data_type}")
                 if "PR-" in project or "topics:" in project:
                     print(f"Handle {project}/{package} {arch} build event: {event_data_type}")
