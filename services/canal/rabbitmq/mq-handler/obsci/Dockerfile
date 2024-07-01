@@ -8,7 +8,7 @@ RUN cp /etc/apk/repositories /etc/apk/repositories.bak; \
   apk update
 
 RUN apk add py3-pip py3-requests; \
-  pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple pika;
+  pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple pika --break-system-packages;
 
 
 ADD githubreporter /githubreporter
