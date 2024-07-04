@@ -1969,8 +1969,28 @@ spec:
         app: api
     spec:
       containers:
+        - env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: obs
+            - name: TIME_ZONE
+              value: Asia/Shanghai
+          image: 'mariadb:10.6.14'
+          imagePullPolicy: IfNotPresent
+          name: mysql
+          ports:
+            - containerPort: 3306
+              name: mysql
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/mysql/conf.d
+              name: db-config-data
+            - mountPath: /var/lib/mysql
+              name: db-data
         - image: 'memcached:latest'
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: memcached
           ports:
             - containerPort: 11211
@@ -1978,12 +1998,13 @@ spec:
           resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
-        - image: 'hub.deepin.com/k3s/obs/api:latest'
+        - image: 'hub.deepin.com/k3s/obs/api:test'
           imagePullPolicy: Always
           name: api
           ports:
             - containerPort: 31443
               protocol: TCP
+          resources: {}
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -1996,6 +2017,10 @@ spec:
             - mountPath: /srv/www/obs/api/config/options.yml
               name: api-options-config
               subPath: options.yml
+            - mountPath: /srv/www/obs/docs/api/obs.rng
+              name: linglong-obsrng
+              readOnly: true
+              subPath: obs.rng
       dnsConfig:
         nameservers:
           - 114.114.114.114
@@ -2035,6 +2060,18 @@ spec:
                 path: options.yml
             name: api-options-config
           name: api-options-config
+        - configMap:
+            defaultMode: 420
+            name: apiserver-linglong-patch
+          name: linglong-obsrng
+        - configMap:
+            defaultMode: 420
+            name: mariadb-config
+          name: db-config-data
+        - hostPath:
+            path: /srv/mysql
+            type: DirectoryOrCreate
+          name: db-data
 
 # Obs Api Service
 ---
@@ -2082,6 +2119,31 @@ spec:
       port: 11211
       protocol: TCP
       targetPort: 11211
+  selector:
+    app: api
+  sessionAffinity: None
+  type: ClusterIP
+
+# Obs mysql Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {}
+  labels:
+    app: api
+  name: mysql
+  namespace: obs
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: mysql
+      port: 3306
+      protocol: TCP
+      targetPort: 3306
   selector:
     app: api
   sessionAffinity: None
