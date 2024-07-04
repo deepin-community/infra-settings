@@ -1579,6 +1579,7 @@ data:
     # OBS WEBUI & API
     <VirtualHost *:31443>
             ServerName build-test.deepin.com
+            TraceEnable off
             # ServerName build.deepin.com
             # ServerName localhost
 
