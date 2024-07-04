@@ -1807,6 +1807,13 @@ spec:
               name: servicedir
             - mountPath: /srv/obs/.cache
               name: cachedir
+            - mountPath: /home/obs_ed25519
+              name: ssh-key
+              readOnly: true
+              subPath: obs_ed25519
+            - mountPath: /home/known_hosts
+              name: known-hosts
+              subPath: known_hosts
       dnsConfig:
         nameservers:
           - 10.20.0.10
@@ -1881,6 +1888,20 @@ spec:
             path: /faststorage/gitcache
             type: Directory
           name: cachedir
+        - name: ssh-key
+          secret:
+            defaultMode: 420
+            items:
+              - key: obs_ed25519
+                path: obs_ed25519
+            secretName: obs-ssh-key
+        - configMap:
+            defaultMode: 420
+            items:
+              - key: known_hosts
+                path: known_hosts
+            name: github-known-hosts
+          name: known-hosts
 
 # Obs Src Service
 ---
