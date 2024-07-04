@@ -60,7 +60,7 @@ def callback(ch, method, properties, body):
             print("列名：", columns)
             print("值：", values)
 
-            event_data_type = str(values[0])
+            event_data_type = str(values[0]).replace("'","").strip()
             if "Event::Build" not in event_data_type:
                 print(f"{event_data_type} not support")
                 return
