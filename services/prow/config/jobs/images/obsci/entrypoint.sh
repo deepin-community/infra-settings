@@ -125,6 +125,12 @@ if [ -z "$serviceconfig" ]; then
 fi
 #echo "serviceconfig: $serviceconfig"
 
+buildscript=$(yq -e '.obscijobs' $yaml_file | yq --arg repo $full_repo_name '.[] as $repos | select($repos.repos[] == $repo) | $repos.build_script')
+if [ -z "$buildscript" ]; then
+    buildscript=$(yq -e '.obscijobs' $yaml_file | yq --arg repo $REPO_OWNER '.[] as $repos | select($repos.repos[] == $repo) | $repos.build_script')
+    echo "$full_repo_name obs ci build script config isn't existed, using ${REPO_OWNER}'s config"
+fi
+
 PROJECT_NAME="$REPO_OWNER:$REPO_NAME:PR-$PULL_NUMBER"
 if [[ "$PULL_HEAD_REF" == "topic-"* ]]; then
     prefix="topic-"
@@ -181,6 +187,11 @@ if [ "$oldsha" != "$PULL_PULL_SHA" ]; then
 else
     # 如果__branch_request的sha值未发生变化，触发rebuild，这里主要应对github通过'/test github-trigger-obs-ci'命令触发rebuild的场景
     curl -X POST -u "$OSCUSER:$OSCPASS" "$OBS_HOST/build/deepin:CI:$PROJECT_NAME?cmd=rebuild&package=$REPO_NAME"
+fi
+
+if [ -n "${buildscript}" -o "${buildscript}" != "" -o "${buildscript}" != null ]; then
+    echo ${buildscript} > build.script
+    curl -X PUT -u "$OSCUSER:$OSCPASS" -d @build.script -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/build.script"
 fi
 
 echo "Setting github commit status..."

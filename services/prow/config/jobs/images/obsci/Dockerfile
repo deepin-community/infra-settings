@@ -8,7 +8,7 @@ RUN cp /etc/apk/repositories /etc/apk/repositories.bak; \
   apk update
 
 RUN apk add py3-pip jq curl; \
-  pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple yq;
+  pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple yq --break-system-packages;
 
 
 ADD entrypoint.sh /entrypoint.sh
