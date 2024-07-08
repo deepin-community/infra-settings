@@ -393,6 +393,8 @@ presubmits:
     - <<: *github-pr-review-ci
   linuxdeepin:
     - <<: *github-pr-review-ci
+  linuxdeepin/treeland.private:
+    - <<: *github-trigger-obs-ci
 
 postsubmits:
   deepin-community:
@@ -419,3 +421,6 @@ postsubmits:
   linuxdeepin:
     - <<: *linuxdeepin-sync-to-gitlab
     - <<: *linuxdeepin-sync-to-gitee
+  linuxdeepin/treeland.private:
+    - <<: *obs-src-sync
+    - <<: *linuxdeepin-sync-to-gitlab

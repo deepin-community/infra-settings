@@ -400,3 +400,40 @@ obscijobs:
           <param name="versionformat">@CHANGELOG@@DEEPIN_OFFSET@</param>
         </service>
       </services>
+  - repos:
+      - linuxdeepin/treeland.private
+    project_meta_tpl: |
+      <project name="vioken:PROJECT_NAME">
+        <title/>
+        <description/>
+        <sourceaccess>
+          <disable/>
+        </sourceaccess>
+        <access>
+          <disable/>
+        </access>
+        <repository name="deepin_ci">
+          <path project="vioken" repository="deepin_develop"/>
+          <arch>x86_64</arch>
+          <arch>aarch64</arch>
+        </repository>
+      </project>
+    package_meta_tpl: |
+      <package name="PKGNAME" project="deepin:CI:PROJECT_NAME">
+        <title/>
+        <description/>
+      </package>
+    project_br_tpl: >-
+      {"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}
+    project_service_tpl: |
+      <services>
+        <service name="obs_gbp">
+          <param name="url">https://github.com/linuxdeepin/REPO.git</param>
+          <param name="scm">git</param>
+          <param name="exclude">.git</param>
+          <param name="exclude">.github</param>
+          <param name="versionformat">@CHANGELOG@@DEEPIN_OFFSET@</param>
+        </service>
+      </services>
+    build_script: |
+      exec dpkg-buildpackage -us -uc --build=any,all "$@"
