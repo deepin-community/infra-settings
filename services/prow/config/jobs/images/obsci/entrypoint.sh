@@ -189,7 +189,7 @@ else
     curl -X POST -u "$OSCUSER:$OSCPASS" "$OBS_HOST/build/deepin:CI:$PROJECT_NAME?cmd=rebuild&package=$REPO_NAME"
 fi
 
-if [ -n "${buildscript}" -o "${buildscript}" != "" -o "${buildscript}" != null ]; then
+if [ -n "${buildscript}" -a "${buildscript}" != "" -a "${buildscript}" != null ]; then
     echo ${buildscript} > build.script
     curl -X PUT -u "$OSCUSER:$OSCPASS" -d @build.script -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/build.script"
 fi
