@@ -403,7 +403,7 @@ obscijobs:
   - repos:
       - linuxdeepin/treeland.private
     project_meta_tpl: |
-      <project name="vioken:PROJECT_NAME">
+      <project name="deepin:CI:PROJECT_NAME">
         <title/>
         <description/>
         <sourceaccess>
@@ -423,12 +423,10 @@ obscijobs:
         <title/>
         <description/>
       </package>
-    project_br_tpl: >-
-      {"action":"opened","pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}
     project_service_tpl: |
       <services>
         <service name="obs_gbp">
-          <param name="url">https://github.com/linuxdeepin/REPO.git</param>
+          <param name="url">git@github.com:linuxdeepin/treeland.private.git</param>
           <param name="scm">git</param>
           <param name="exclude">.git</param>
           <param name="exclude">.github</param>
