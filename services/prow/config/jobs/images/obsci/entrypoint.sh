@@ -199,7 +199,8 @@ else
 fi
 
 if [ -n "${buildscript}" -a "${buildscript}" != "" -a "${buildscript}" != null ]; then
-    echo ${buildscript} > build.script
+    buildscript=${buildscript#\"}
+    echo -e ${buildscript%\"} | sed 's/\\"/"/g' > build.script
     curl -X PUT -u "$OSCUSER:$OSCPASS" -d @build.script -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/build.script"
 fi
 
