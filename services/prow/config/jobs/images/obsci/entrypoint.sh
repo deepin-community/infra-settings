@@ -179,20 +179,21 @@ if [ "$oldsha" != "$PULL_PULL_SHA" ]; then
         curl -X PUT -u "$OSCUSER:$OSCPASS" -d @_branch_request -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request"
     fi
 
-    # 存在_service文件的情况下不重复提交
-    result=$(curl -u $OSCUSER:$OSCPASS "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"|grep "no such file")
-    if [ "$result" != "" ]; then
-        echo "Uploading _service..."
-        serviceconfig=${serviceconfig#\"}
-        echo -e ${serviceconfig%\"} | sed 's/\\"/"/g' > _service
-        sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _service
-        if [ -z "${brconfig}" -o "${brconfig}" = "" -o "${brconfig}" = null ]; then
-            echo "Using service revision"
-            revision="    <param name=\"revision\">${PULL_PULL_SHA}</param>"
-            sed -i "3a ${revision}" _service
-        fi
-        curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @_service -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"
+    echo "Uploading _service..."
+    serviceconfig=${serviceconfig#\"}
+    echo -e ${serviceconfig%\"} | sed 's/\\"/"/g' > _service
+    sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _service
+    if [ -z "${brconfig}" -o "${brconfig}" = "" -o "${brconfig}" = null ]; then
+        echo "Using service revision"
+        revision="    <param name=\"revision\">${PULL_PULL_SHA}</param>"
+        sed -i "3a ${revision}" _service
+        echo "upload _branch_requst only contains pr sha"
+        echo '{"pull_request":{"head":{"repo":{"full_name":"REPO"},"sha":"TAGSHA"}}}' > _branch_request
+        sed -i "s#REPO#${REPO_OWNER}/${REPO_NAME}#g" _branch_request
+        sed -i "s#TAGSHA#${PULL_PULL_SHA}#g" _branch_request
+        curl -X PUT -u "$OSCUSER:$OSCPASS" -d @_branch_request -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_branch_request"
     fi
+    curl -X PUT -u "$OSCUSER:$OSCPASS" -H "Content-type: text/xml" -d @_service -s "$OBS_HOST/source/deepin:CI:$PROJECT_NAME/$REPO_NAME/_service"
 else
     # 如果__branch_request的sha值未发生变化，触发rebuild，这里主要应对github通过'/test github-trigger-obs-ci'命令触发rebuild的场景
     curl -X POST -u "$OSCUSER:$OSCPASS" "$OBS_HOST/build/deepin:CI:$PROJECT_NAME?cmd=rebuild&package=$REPO_NAME"
