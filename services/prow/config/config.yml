@@ -220,7 +220,6 @@ tide:
     peeweep-test: rebase
     deepin-community: rebase
     linuxdeepin: rebase
-    linuxdeepin/deepin-unioncode: merge
 obscijobs:
   - repos:
       - linuxdeepin
