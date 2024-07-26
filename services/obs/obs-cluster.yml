@@ -1038,6 +1038,7 @@ data:
       http://obs-backend-test.cicd.getdeepin.org,
       http://obs-backend-other.cicd.getdeepin.org,
       http://obs-backend-v25.cicd.getdeepin.org,
+      http://obs-backend-it.cicd.getdeepin.org,
     ");
 
     our $redisserver = "redis://127.0.0.1";
@@ -1189,6 +1190,7 @@ data:
     # on an own server in this example. Order is important.
     our $partitioning = [
       #'deepin:CI:TestingIntegration:test-integration-pr-533'    => 'back-deepin-main',
+      'deepin:CI:TestingIntegration'    => 'backend-it',
       'deepin:CI'    => 'backend-ci',
       #'vioken'    => 'backend-vioken',
       'home:deepin-obs'    => 'backend-ci',
@@ -1209,6 +1211,7 @@ data:
       'backend-test' => 'http://obs-backend-test.cicd.getdeepin.org',
       'backend-other' => 'http://obs-backend-other.cicd.getdeepin.org',
       'backend-v25' => 'http://obs-backend-v25.cicd.getdeepin.org',
+      'backend-it' => 'http://obs-backend-it.cicd.getdeepin.org',
       #'backend-vioken' => 'http://obs-backend-vioken.cicd.getdeepin.org',
     };
 
