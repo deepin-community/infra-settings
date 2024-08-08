@@ -1,0 +1,261 @@
+#!/usr/bin/python3
+
+import os
+import requests
+import json
+import postAction
+
+# 环境变量中获取参数
+REPO_OWNER = os.environ.get("REPO_OWNER", "peeweep-test")
+REPO_NAME = os.environ.get("REPO_NAME", "test-ci-check")
+PULL_NUMBER = os.environ.get("PULL_NUMBER", "1")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+    
+REPO = REPO_OWNER + '/' + REPO_NAME
+
+# 初始检查失败数量
+fail_check_number = 0
+# debian前缀检查文件白名单
+exFilesLstForDebian = ["debian/changelog", "debian/copyright", "debian/compat", "debian/source/format"]
+# 敏感词检查文件后缀白名单
+exSuffLstForKeys = ['js','vue','ts','less','html','go','css','json','txt','doc','jpg','png','svg','py','yml','md']
+# 环境设置敏感词检查仓库白名单
+exProjectLstForEnvKeys = ["deviceos/oem/base/agent", "deviceos/oem/gw/oem", "deviceos/oem/html/oem", "deviceos/oem/html/oemadmin"]
+# reviewers
+# reviewers = 'ckux'
+# team_reviewers = 'Package-admins'
+
+keyJson = {
+  "modify": "getcap,setcap,lshw,dmidecode",
+  "all": "export,unset"
+}
+      
+def getRequest(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+      return response.json()
+    else:
+      print(response.status_code)
+      print(f"获取{url}失败, 错误信息：", response.text)
+            
+# 设置头信息，包括使用access token进行认证
+def getHeaders():
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Accept": "application/vnd.github+json" 
+    }
+    return headers
+
+# 获取pr中变更文件信息
+def get_pulls_files():
+    url = f'https://api.github.com/repos/{REPO}/pulls/{PULL_NUMBER}/files'
+    files_dict = getRequest(url)
+    return files_dict
+        
+# 获取指定pr中的变更文件
+def get_change_files():
+    global pfInfo
+    try:
+        originInfo = {}
+        originInfoStr = ''
+        pfInfo = get_pulls_files()
+        if pfInfo:
+          for fileTemp in pfInfo:
+            fileTempJson = {}
+            fileTempJson['status'] = fileTemp['status']
+            fileTempJson['contents_url'] = fileTemp['contents_url']
+            originInfo[fileTemp['filename']] = fileTempJson
+            originInfoStr += fileTemp['filename'] + ':' + fileTemp['status'] + '\n'
+        return originInfo
+    except Exception as e:
+        print(f"[ERR]: 异常报错-{e}")
+
+# debian前缀检查和debian版本
+def debianPreCheck(fail_check_number):
+    print('debianPreCheck start')
+    resulyJson = get_change_files()
+    resultLst = []
+    for fileName in resulyJson:
+      if fileName.startswith("debian/"):
+        needCheckStatus = True
+        if fileName in exFilesLstForDebian:
+          if fileName == 'debian/changelog':
+            if resulyJson[fileName]['status'] != 'removed':
+              fail_check_number = debianVersionCheck(resulyJson[fileName]['contents_url'], fail_check_number)
+          needCheckStatus = False
+        if fileName.startswith('debian/patches/') or fileName.startswith('debian/manpage.'):
+          needCheckStatus = False
+        if fileName.endswith('.manpages'):
+          needCheckStatus = False
+        if needCheckStatus:
+          resultLst.append(fileName)
+    if resultLst:
+      writeCommentFile(f"检测到debian目录文件有变更: {','.join(resultLst)}")
+      fail_check_number += 1
+    else:
+      print("[PASS]: debian前缀检查通过")
+    print('debianPreCheck end')
+    return fail_check_number
+
+# checkType: 1, 在增加和修改内容筛选敏感词
+def filter_keys_in_modify(content, keyLst):
+    strJson = {}
+    for fileName, patchContent in content.items():
+        for lineContent in patchContent['b']:
+            for keyStr in keyLst:
+                if keyStr in lineContent:
+                    if keyStr not in list(strJson.keys()):
+                        strJson[keyStr] = {}
+                    if fileName not in list(strJson[keyStr].keys()):
+                        strJson[keyStr][fileName] = []
+                    strJson[keyStr][fileName].append(lineContent)
+    return strJson
+
+# 在增加，删除和修改内容中筛选敏感词
+def filter_keys_in_all(content, keyLst):
+  # checkType: 2, 在修改,删除和增加内容筛选敏感词
+    strJson = {}
+    for fileName, patchContent in content.items():
+            for keyStr in keyLst:
+                for actionType, actionTypePatchConten in patchContent.items():
+                    for lineContent in actionTypePatchConten:
+                        if keyStr in lineContent:
+                            if keyStr not in list(strJson.keys()):
+                                strJson[keyStr] = {}
+                            if fileName not in list(strJson[keyStr].keys()):
+                                strJson[keyStr][fileName] = {}
+                            if actionType not in list(strJson[keyStr][fileName].keys()):
+                                strJson[keyStr][fileName][actionType] = []
+                            strJson[keyStr][fileName][actionType].append(lineContent)
+    return strJson
+
+# 在变动信息中筛选敏感词
+def filter_keywords(content_dict, keyLst, checkType):
+    originInfo = {}
+    resultInfo = {}
+    if content_dict:
+        for fileTemp in content_dict:
+            originInfo[fileTemp['filename']] = {
+                "a": [],
+                "b": []
+            }
+            fileContent = []
+            if 'patch' in fileTemp.keys():
+              filePatch = fileTemp["patch"]
+              fileContent = filePatch.splitlines()
+            for line in fileContent:
+                if line.startswith("-"):
+                    originInfo[fileTemp['filename']]["a"].append(line.lstrip("-"))
+                elif line.startswith("+"):
+                    originInfo[fileTemp['filename']]["b"].append(line.lstrip("+"))
+
+        if checkType == 'modify':
+            resultInfo = filter_keys_in_modify(originInfo, keyLst)
+        elif checkType == 'all':
+            resultInfo = filter_keys_in_all(originInfo, keyLst)
+        else:
+            print("异常类型")
+    else:
+        print("原始解析数据为空")
+
+    return resultInfo
+
+# 读取json文件
+def readJson(filepath):
+    data = {}
+    if os.path.isfile(filepath):
+        with open(filepath, 'r') as file:
+            data = json.load(file)
+    return data
+
+# 写json文件
+def writeJsonFile(resultInfo, jsonFile):
+    data = json.dumps(resultInfo, sort_keys=True, indent=2)
+    data = data.encode('utf-8').decode('unicode_escape')
+    print(data)
+    with open(jsonFile, 'w+') as fp:
+      fp.write(json.dumps(resultInfo, indent=4, ensure_ascii=False))
+
+# 敏感词检查
+def debianKeyWordsCheck(keyJson, fail_check_number):
+  # modify: 在增加和修改内容筛选敏感词
+  # all: 在修改,删除和增加内容筛选敏感词
+  print("debianKeyWordsCheck start")
+  resultInfo = {}
+  for check_type in keyJson:
+    key_list = keyJson[check_type].split(',') #关键字以','号分隔
+    resultInfo = filter_keywords(pfInfo, key_list, check_type)
+  
+    if resultInfo:
+        fail_check_number += 1
+        # writeCommentFile(f"[FAIL]: {'/'.join(list(resultInfo.keys()))}敏感词检查不通过")
+        writeCommentFile(f"检测到敏感词{', '.join(list(resultInfo.keys()))}变动")
+        writeJsonFile(resultInfo, "result-{}.json".format(check_type))
+    #   exit(1)
+    else:
+      print(f"[PASS]: 敏感词{key_list}检查通过")
+    print("debianKeyWordsCheck end")
+  return fail_check_number, resultInfo
+
+# debian/changelog版本检查，需要先下载debian/changelog文件
+def debianVersionCheck(contents_url, fail_check_number):
+  print('debianVersionCheck start', contents_url)
+  file_download_url = getRequest(contents_url)['download_url']
+  file_download_url = file_download_url.replace('raw.githubusercontent.com', 'raw.gitmirror.com')
+  print("file_download_url is ", file_download_url)
+  if file_download_url:
+    if not os.path.isfile('changelog'): #临时
+      file_raw_content = requests.get(file_download_url)
+      if file_raw_content:
+        with open('changelog', 'wb') as fp:
+          fp.write(file_raw_content.content)
+  else:
+    print('[ERR]: debian/changelog下载失败')
+  if os.path.isfile('changelog'):
+    project_tmp = REPO.split('/')[1]
+    cmd_str = "awk -F'[()]' '/^%s/ {print $2}' changelog | head -n2 " % (project_tmp)
+    with os.popen(f'{cmd_str}') as fin:
+      versionLst = fin.read().split()
+      if len(versionLst) == 2:
+        version0 = versionLst[0]
+        version1 = versionLst[1]
+        if os.system(f'dpkg --compare-versions {version0} gt {version1}') == 0:
+          print(f'[PASS]: debian/changelog版本检查通过:{version0}|{version1}')
+        else:
+          writeCommentFile(f'debian/changelog版本检查失败:{version0}|{version1}')
+          fail_check_number += 1
+      else:
+        if len(versionLst) != 1:
+          print(f'[ERR]: 版本检查异常:{versionLst}')
+        else:
+          print(f'[PASS]: 版本检查通过:{versionLst}')
+  print('debianVersionCheck end')
+  return fail_check_number
+    
+# 写comment文件
+def writeCommentFile(commentMsg):
+  try:
+    print(commentMsg)
+    with open('comment.txt', "a+") as fout:
+      fout.write(commentMsg+'\n')
+  except Exception as e:
+    print(f"[ERR]: writeCommentFile异常报错-{e}")
+
+# post步骤: 任务失败进行评论和添加reviewers
+def postStep(fail_check_number):
+    if fail_check_number != 0:
+      postAction.createPRComment('debian-check')
+      postAction.addReviewers()
+      exit(1)
+
+# 检查开始前删除评论文件
+def preStep():
+  if os.path.isfile('comment.txt'):
+    os.remove('comment.txt')
+      
+
+preStep()
+fail_check_number = debianPreCheck(fail_check_number)
+fail_check_number = debianKeyWordsCheck(keyJson, fail_check_number)
+postStep(fail_check_number)

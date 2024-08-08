@@ -542,11 +542,111 @@ ghc-packages-obs-sync: &ghc-packages-obs-sync
     description: >-
       Runs Prow ghc-packages-obs-sync to sync obs ghc:exp.
 
+debian-check: &debian-check
+  name: debian-check
+  decorate: false
+  always_run: false
+  skip_report: true
+  labels:
+    app: debian-check
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.20.64.82
+        hostnames:
+          - api.github.com
+      - ip: 10.20.64.83
+        hostnames:
+          - github.githubassets.com
+      - ip: 10.20.64.84
+        hostnames:
+          - raw.githubusercontent.com
+      - ip: 10.20.64.85
+        hostnames:
+          - collector.github.com
+      - ip: 10.20.64.86
+        hostnames:
+          - avatars.githubusercontent.com
+    containers:
+      - name: debian-check
+        image: "hub.deepin.com/github-ci/prow/debian-check:latest"
+        command:
+          - /entrypoint
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: cert
+  annotations:
+    testgrid-num-failures-to-alert: "6"
+    testgrid-alert-stale-results-hours: "12"
+    testgrid-dashboards: sig-deepin-cicd
+    testgrid-tab-name: debian-check
+    testgrid-alert-email: kuchune@uniontech.com
+    description: >-
+      Runs Prow debian-check to config , and add reviewers and comment.
+
+api-check: &api-check
+  name: api-check
+  decorate: false
+  always_run: false
+  skip_report: true
+  labels:
+    app: api-check
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.20.64.82
+        hostnames:
+          - api.github.com
+      - ip: 10.20.64.83
+        hostnames:
+          - github.githubassets.com
+      - ip: 10.20.64.84
+        hostnames:
+          - raw.githubusercontent.com
+      - ip: 10.20.64.85
+        hostnames:
+          - collector.github.com
+      - ip: 10.20.64.86
+        hostnames:
+          - avatars.githubusercontent.com
+    containers:
+      - name: api-check
+        image: "hub.deepin.com/github-ci/prow/api-check:latest"
+        command:
+          - /entrypoint.sh
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: cert
+  annotations:
+    testgrid-num-failures-to-alert: "6"
+    testgrid-alert-stale-results-hours: "12"
+    testgrid-dashboards: sig-deepin-cicd
+    testgrid-tab-name: api-check
+    testgrid-alert-email: kuchune@uniontech.com
+    description: >-
+      Runs Prow api-check to config , and add comment.
+
 presubmits:
   peeweep-test:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
     - <<: *hold-version-check
+    - <<: *debian-check
+    - <<: *api-check
   deepin-community/kernel:
     - <<: *github-pr-review-ci
   deepin-community:
