@@ -1051,7 +1051,7 @@ data:
     # our $serviceroot = "/opt/obs/MyServiceSystem";
 
     # Maximum number of concurrent jobs for source service
-    our $service_maxchild = 60;
+    our $service_maxchild = 80;
 
     # optional notification service:
     #our $hermesserver = "http://$hostname/hermes";
@@ -1241,7 +1241,7 @@ data:
     # enable service dispatcher
     our $servicedispatch = 1;
     # max of 4 parallel running services (default)
-    # our $servicedispatch_maxchild = 4;
+    our $servicedispatch_maxchild = 16;
 
     # print all messages with a lower level than $debuglevel in addition to the normal log messages
     #our $debuglevel = 1;
