@@ -1051,7 +1051,7 @@ data:
     # our $serviceroot = "/opt/obs/MyServiceSystem";
 
     # Maximum number of concurrent jobs for source service
-    # our $service_maxchild = 20;
+    our $service_maxchild = 60;
 
     # optional notification service:
     #our $hermesserver = "http://$hostname/hermes";
