@@ -108,6 +108,10 @@ owners:
     deepin-community/SIG:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
+    deepin-community/kernel:
+      owners: 'OWNERS'
+      owners_aliases: 'OWNERS_ALIASES'
+      owners_file_path: 'debian/deepin'
 welcome:
 - repos:
   - linuxdeepin
