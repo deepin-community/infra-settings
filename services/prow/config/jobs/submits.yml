@@ -640,6 +640,55 @@ api-check: &api-check
     description: >-
       Runs Prow api-check to config , and add comment.
 
+static-check: &static-check
+  name: static-check
+  decorate: false
+  always_run: false
+  skip_report: true
+  labels:
+    app: static-check
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.20.64.82
+        hostnames:
+          - api.github.com
+      - ip: 10.20.64.83
+        hostnames:
+          - github.githubassets.com
+      - ip: 10.20.64.84
+        hostnames:
+          - raw.githubusercontent.com
+      - ip: 10.20.64.85
+        hostnames:
+          - collector.github.com
+      - ip: 10.20.64.86
+        hostnames:
+          - avatars.githubusercontent.com
+    containers:
+      - name: static-check
+        image: "hub.deepin.com/github-ci/prow/static-check:latest"
+        command:
+          - /entrypoint.sh
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-token
+                key: cert
+  annotations:
+    testgrid-num-failures-to-alert: "6"
+    testgrid-alert-stale-results-hours: "12"
+    testgrid-dashboards: sig-deepin-cicd
+    testgrid-tab-name: static-check
+    testgrid-alert-email: kuchune@uniontech.com
+    description: >-
+      Runs Prow static-check to config , and add comment.
+
 presubmits:
   peeweep-test:
     - <<: *github-trigger-obs-ci
@@ -647,6 +696,7 @@ presubmits:
     - <<: *hold-version-check
     - <<: *debian-check
     - <<: *api-check
+    - <<: *static-check
   deepin-community/kernel:
     - <<: *github-pr-review-ci
   deepin-community:
