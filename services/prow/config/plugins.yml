@@ -111,7 +111,7 @@ owners:
     deepin-community/kernel:
       owners: 'OWNERS'
       owners_aliases: 'OWNERS_ALIASES'
-      owners_file_path: 'debian/deepin'
+      owners_file_path: 'deepin'
 welcome:
 - repos:
   - linuxdeepin
