@@ -544,8 +544,10 @@ ghc-packages-obs-sync: &ghc-packages-obs-sync
 
 debian-check: &debian-check
   name: debian-check
+  branches:
+  - master
   decorate: false
-  always_run: false
+  always_run: true
   skip_report: true
   labels:
     app: debian-check
@@ -593,8 +595,10 @@ debian-check: &debian-check
 
 api-check: &api-check
   name: api-check
+  branches:
+  - master
   decorate: false
-  always_run: false
+  always_run: true
   skip_report: true
   labels:
     app: api-check
@@ -642,8 +646,10 @@ api-check: &api-check
 
 static-check: &static-check
   name: static-check
+  branches:
+  - master
   decorate: false
-  always_run: false
+  always_run: true
   skip_report: true
   labels:
     app: static-check
@@ -702,6 +708,9 @@ presubmits:
   deepin-community:
     - <<: *github-trigger-obs-ci
     - <<: *hold-version-check
+    - <<: *debian-check
+    - <<: *api-check
+    - <<: *static-check
   linuxdeepin/deepin-osconfig:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
