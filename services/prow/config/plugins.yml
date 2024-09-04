@@ -12,6 +12,7 @@ plugins:
     - topic
     - lifecycle  # Allow /lifecycle stale
     - deepin-help
+    - hold
   deepin-community:
     plugins:
     - approve
