@@ -47,18 +47,22 @@ if [ -z "$PULL_BASE_SHA" ]; then
 fi
 
 PROJECT_NAME="deepin:Develop:main"
+COMPONENT="main"
 if [ "$REPO_OWNER" = "linuxdeepin" ]; then
     PROJECT_NAME="deepin:Develop:dde"
+    COMPONENT="dde"
 else
     result=$(curl -u $OSCUSER:$OSCPASS "$OBS_HOST/source/$PROJECT_NAME/$REPO_NAME/_service"|grep "unknown_package")
     if [ "$result" != "" ]; then
         PROJECT_NAME="deepin:Develop:community"
+        COMPONENT="community"
         echo "Project override to $PROJECT_NAME"
     fi
 fi
 
 echo "Triggering src service..."
-curl -X POST -H "Authorization: Token $OBSTOKEN" "$OBS_HOST/trigger/runservice?project=$PROJECT_NAME&package=$REPO_NAME"
+curl -X POST -H "Authorization: Token $OBSTOKEN" "$OBS_HOST/trigger/runservice?project=deepin:Develop:$COMPONENT&package=$REPO_NAME"
+curl -X POST -H "Authorization: Token $OBSTOKEN" "$OBS_HOST/trigger/runservice?project=v25:stable:$COMPONENT&package=$REPO_NAME"
 
 PULL_NUMBER=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/${PULL_BASE_SHA}/pulls |grep "\"number\":" |awk '{print $2}' |awk -F ',' '{print $1}')
 if [ "$PULL_NUMBER" != "" ]; then
