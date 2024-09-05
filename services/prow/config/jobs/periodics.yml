@@ -114,3 +114,34 @@ periodics:
       description: >-
         Runs Prow branchprotector to apply configured GitHub status context
         requirements and merge policies.
+
+  - name: ci-ben
+    cron: 0 2 * * * #每天凌晨2点开启检查
+    labels:
+      app: ben
+    decorate: true
+    decoration_config:
+      timeout: 2h
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: ben
+          image: hub.deepin.com/prow/ben
+          command:
+            - ben.sh
+          volumeMounts:
+            - name: html
+              mountPath: /ben/html
+      volumes:
+        - name: html
+          persistentVolumeClaim:
+            claimName: prow-jobs
+    annotations:
+      testgrid-num-failures-to-alert: "6"
+      testgrid-alert-stale-results-hours: "12"
+      testgrid-dashboards: sig-testing-misc
+      testgrid-tab-name: ci-ben
+      testgrid-alert-email: chentianyu1@deepin.org
+      description: >-
+        Runs Prow ben to check deepin repository depends
