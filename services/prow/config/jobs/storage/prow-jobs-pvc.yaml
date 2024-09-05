@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: prow-jobs
+  namespace: test-pods
+  labels:
+    app: prow-jobs
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "prow"
+  resources:
+    requests:
+      storage: 2Gi
