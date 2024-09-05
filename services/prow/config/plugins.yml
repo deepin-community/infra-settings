@@ -63,6 +63,9 @@ approve:
   - deepin-community
   require_self_approval: true
   #lgtm_acts_as_approve: true
+- repos:
+  - deepin-community/kernel
+  require_self_approval: false
 triggers:
 - repos:
   - peeweep-test
