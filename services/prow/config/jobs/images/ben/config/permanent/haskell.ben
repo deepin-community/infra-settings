@@ -1,0 +1,8 @@
+title = "Haskell";
+is_affected = .source ~ /ghc/
+            | .build-depends ~ /ghc/
+            | .build-depends ~ /haskell-devscripts/
+            | .depends ~ /libghc-/;
+is_good = !.uninstallable ~ /yes/;
+is_bad = .uninstallable ~ /yes/;
+

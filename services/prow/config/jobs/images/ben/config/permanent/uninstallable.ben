@@ -1,0 +1,4 @@
+# title       = "Python 3.12 as default version";
+is_affected = .depends ~ /./;
+is_good = !.uninstallable ~ /yes/;
+is_bad = .uninstallable ~/yes/;

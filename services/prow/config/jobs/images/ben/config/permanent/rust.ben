@@ -1,0 +1,6 @@
+title = "Rust";
+is_affected = .source ~ /\brust/
+            | .build-depends ~ /rustc/;
+is_good = !.uninstallable ~ /yes/;
+is_bad = .uninstallable ~ /yes/;
+

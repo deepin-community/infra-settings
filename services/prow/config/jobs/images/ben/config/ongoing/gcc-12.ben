@@ -1,0 +1,4 @@
+# title       = "Python 3.12 as default version";
+is_affected = .depends ~/libstdc\+\+6 \(>= 1[23]/;
+is_good = .depends ~ /libstdc\+\+6 \(>= 12/;
+is_bad = .depends ~ /libstdc\+\+6 \(>= 13/;
