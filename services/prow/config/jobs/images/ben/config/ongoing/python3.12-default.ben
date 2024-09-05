@@ -1,0 +1,14 @@
+title       = "Python 3.12 as default version";
+is_affected = ((.depends ~ /python3 \(<< 3\.13\)/ & .depends ~ /python3 \(>= 3\.12~\)/)
+            | (.depends ~ /python3 \(<< 3\.12\)/ & .depends ~ /python3 \(>= 3\.11~\)/)
+            | (.depends ~ /libpython3\.11/ & ! .depends ~ /libpython3\.12/)
+            | (.depends ~ /libpython3\.12/ & ! .depends ~ /libpython3\.11/))
+            & !.source ~ /python3-defaults/
+            & !.source ~ /python3\.\d+/;
+is_good     = .depends ~ /python3 \(<< 3\.13\)/
+            | .depends ~ /libpython3\.12/;
+is_bad      = .depends ~ /python3 \(<< 3\.12\)/
+            | (.depends ~ /libpython3\.11/ & ! .depends ~ /libpython3\.12/);
+notes       = "#1061188
+pybind11-json (arch:all) needs at least a sourceful upload";
+export      = false;

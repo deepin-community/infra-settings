@@ -1,0 +1,8 @@
+title = "OCaml";
+is_affected = .maintainer ~ /debian-ocaml-maint/
+            | .build-depends ~ /ocaml/
+            | .build-depends-indep ~ /ocaml/;
+is_good = !.uninstallable ~ /yes/;
+is_bad = .uninstallable ~ /yes/;
+notes = "This is permanent tracker to prepare next transition of OCaml.
+More on http://wiki.debian.org/Teams/OCamlTaskForce/OCamlTransitions";
