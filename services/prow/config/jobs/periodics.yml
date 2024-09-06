@@ -142,6 +142,6 @@ periodics:
       testgrid-alert-stale-results-hours: "12"
       testgrid-dashboards: sig-testing-misc
       testgrid-tab-name: ci-ben
-      testgrid-alert-email: chentianyu1@deepin.org
+      testgrid-alert-email: sweetyfish@deepin.org
       description: >-
         Runs Prow ben to check deepin repository depends
