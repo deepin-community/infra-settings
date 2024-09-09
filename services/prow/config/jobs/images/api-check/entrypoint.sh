@@ -51,8 +51,9 @@ downloadLatestCode(){
     git clone https://github.com/${REPO_OWNER}/${REPO_NAME}.git -b ${PULL_BASE_REF} --depth=1 . 
     if [ -d "debian/patches" ];then
         if [ "`ls -A debian/patches`" != "" ];then
-            cp debian/patches . -fr
-            quilt push -a || true
+            # cp debian/patches . -fr
+            # quilt push -a || true
+            QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null push -a || true
         fi
     fi
     cd -
@@ -67,8 +68,9 @@ downloadDeveloperCode(){
     git checkout pr-${PULL_NUMBER}
     if [ -d "debian/patches" ];then
         if [ "`ls -A debian/patches`" != "" ];then
-            cp debian/patches . -fr
-            quilt push -a  || true
+            # cp debian/patches . -fr
+            # quilt push -a  || true
+            QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null push -a || true
         fi
     fi
     cd -
