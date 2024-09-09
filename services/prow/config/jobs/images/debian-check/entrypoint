@@ -20,9 +20,7 @@ fail_check_number = 0
 # debian前缀检查文件白名单
 exFilesLstForDebian = ["debian/changelog", "debian/copyright", "debian/compat", "debian/source/format"]
 # 敏感词检查文件后缀白名单
-exSuffLstForKeys = ['js','vue','ts','less','html','go','css','json','txt','doc','jpg','png','svg','py','yml','md']
-# 环境设置敏感词检查仓库白名单
-exProjectLstForEnvKeys = ["deviceos/oem/base/agent", "deviceos/oem/gw/oem", "deviceos/oem/html/oem", "deviceos/oem/html/oemadmin"]
+NoNeedSuffix = [".js", ".vue", ".ts", ".less", ".html", ".go", ".css", ".json", ".txt", ".doc", ".jpg", ".png", ".svg", ".py", '.yml', '.md', '.sha1', '.log']
 
 
 keyJson = {
@@ -136,10 +134,18 @@ def filter_keywords(content_dict, keyLst, checkType):
     resultInfo = {}
     if content_dict:
       for fileTemp in content_dict:
+        noNeed = False
+        filename = fileTemp['filename']
+        for endString in NoNeedSuffix:
+          if filename.endswith(endString):
+            noNeed = True
+            break
+        if noNeed:
+            continue
         tempOriginInfo = {
-            "a": [],
-            "b": []
-          }
+          "a": [],
+          "b": []
+        }
         filePatchContent = []
         if 'patch' in fileTemp.keys():
           filePatchContent = fileTemp["patch"].splitlines()
