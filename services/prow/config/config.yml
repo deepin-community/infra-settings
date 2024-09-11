@@ -161,6 +161,7 @@ tide:
         - deepin-community/rfcs
         - deepin-community/SIG
         - deepin-community/Repository-Integration
+        - deepin-community/kernel
       missingLabels:
         - needs-rebase
         - do-not-merge/hold
