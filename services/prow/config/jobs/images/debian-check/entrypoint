@@ -9,6 +9,8 @@ import postAction
 REPO_OWNER = os.environ.get("REPO_OWNER", "peeweep-test")
 REPO_NAME = os.environ.get("REPO_NAME", "test-ci-check")
 PULL_NUMBER = os.environ.get("PULL_NUMBER", "1")
+PULL_PULL_SHA = os.environ.get("PULL_PULL_SHA", "900c427f788006210c8cdcee47a7f55cdaa1c7c4")
+BUILD_ID = os.environ.get("BUILD_ID", "1234")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
     
 REPO = REPO_OWNER + '/' + REPO_NAME
@@ -18,12 +20,8 @@ fail_check_number = 0
 # debian前缀检查文件白名单
 exFilesLstForDebian = ["debian/changelog", "debian/copyright", "debian/compat", "debian/source/format"]
 # 敏感词检查文件后缀白名单
-exSuffLstForKeys = ['js','vue','ts','less','html','go','css','json','txt','doc','jpg','png','svg','py','yml','md']
-# 环境设置敏感词检查仓库白名单
-exProjectLstForEnvKeys = ["deviceos/oem/base/agent", "deviceos/oem/gw/oem", "deviceos/oem/html/oem", "deviceos/oem/html/oemadmin"]
-# reviewers
-# reviewers = 'ckux'
-# team_reviewers = 'Package-admins'
+NoNeedSuffix = [".js", ".vue", ".ts", ".less", ".html", ".go", ".css", ".json", ".txt", ".doc", ".jpg", ".png", ".svg", ".py", '.yml', '.md', '.sha1', '.log']
+
 
 keyJson = {
   "modify": "getcap,setcap,lshw,dmidecode",
@@ -91,7 +89,7 @@ def debianPreCheck(fail_check_number):
         if needCheckStatus:
           resultLst.append(fileName)
     if resultLst:
-      writeCommentFile(f"检测到debian目录文件有变更: {','.join(resultLst)}")
+      writeCommentFile(f"- 检测到debian目录文件有变更: {','.join(resultLst)}")
       fail_check_number += 1
     else:
       print("[PASS]: debian前缀检查通过")
@@ -102,14 +100,14 @@ def debianPreCheck(fail_check_number):
 def filter_keys_in_modify(content, keyLst):
     strJson = {}
     for fileName, patchContent in content.items():
-        for lineContent in patchContent['b']:
-            for keyStr in keyLst:
-                if keyStr in lineContent:
-                    if keyStr not in list(strJson.keys()):
-                        strJson[keyStr] = {}
-                    if fileName not in list(strJson[keyStr].keys()):
-                        strJson[keyStr][fileName] = []
-                    strJson[keyStr][fileName].append(lineContent)
+      for lineContent in patchContent['b']:
+        for keyStr in keyLst:
+          if keyStr in lineContent:
+            if keyStr not in list(strJson.keys()):
+              strJson[keyStr] = {}
+            if fileName not in list(strJson[keyStr].keys()):
+              strJson[keyStr][fileName] = []
+            strJson[keyStr][fileName].append(lineContent)
     return strJson
 
 # 在增加，删除和修改内容中筛选敏感词
@@ -117,17 +115,17 @@ def filter_keys_in_all(content, keyLst):
   # checkType: 2, 在修改,删除和增加内容筛选敏感词
     strJson = {}
     for fileName, patchContent in content.items():
-            for keyStr in keyLst:
-                for actionType, actionTypePatchConten in patchContent.items():
-                    for lineContent in actionTypePatchConten:
-                        if keyStr in lineContent:
-                            if keyStr not in list(strJson.keys()):
-                                strJson[keyStr] = {}
-                            if fileName not in list(strJson[keyStr].keys()):
-                                strJson[keyStr][fileName] = {}
-                            if actionType not in list(strJson[keyStr][fileName].keys()):
-                                strJson[keyStr][fileName][actionType] = []
-                            strJson[keyStr][fileName][actionType].append(lineContent)
+      for keyStr in keyLst:
+        for actionType, actionTypePatchConten in patchContent.items():
+          for lineContent in actionTypePatchConten:
+            if keyStr in lineContent:
+              if keyStr not in list(strJson.keys()):
+                  strJson[keyStr] = {}
+              if fileName not in list(strJson[keyStr].keys()):
+                  strJson[keyStr][fileName] = {}
+              if actionType not in list(strJson[keyStr][fileName].keys()):
+                  strJson[keyStr][fileName][actionType] = []
+              strJson[keyStr][fileName][actionType].append(lineContent)
     return strJson
 
 # 在变动信息中筛选敏感词
@@ -135,27 +133,35 @@ def filter_keywords(content_dict, keyLst, checkType):
     originInfo = {}
     resultInfo = {}
     if content_dict:
-        for fileTemp in content_dict:
-            originInfo[fileTemp['filename']] = {
-                "a": [],
-                "b": []
-            }
-            fileContent = []
-            if 'patch' in fileTemp.keys():
-              filePatch = fileTemp["patch"]
-              fileContent = filePatch.splitlines()
-            for line in fileContent:
-                if line.startswith("-"):
-                    originInfo[fileTemp['filename']]["a"].append(line.lstrip("-"))
-                elif line.startswith("+"):
-                    originInfo[fileTemp['filename']]["b"].append(line.lstrip("+"))
+      for fileTemp in content_dict:
+        noNeed = False
+        filename = fileTemp['filename']
+        for endString in NoNeedSuffix:
+          if filename.endswith(endString):
+            noNeed = True
+            break
+        if noNeed:
+            continue
+        tempOriginInfo = {
+          "a": [],
+          "b": []
+        }
+        filePatchContent = []
+        if 'patch' in fileTemp.keys():
+          filePatchContent = fileTemp["patch"].splitlines()
+        for line in filePatchContent:
+            if line.startswith("-"):
+                tempOriginInfo["a"].append(line.lstrip("-"))
+            elif line.startswith("+"):
+                tempOriginInfo["b"].append(line.lstrip("+"))
+        originInfo[fileTemp['filename']] = tempOriginInfo
 
-        if checkType == 'modify':
-            resultInfo = filter_keys_in_modify(originInfo, keyLst)
-        elif checkType == 'all':
-            resultInfo = filter_keys_in_all(originInfo, keyLst)
-        else:
-            print("异常类型")
+      if checkType == 'modify':
+          resultInfo = filter_keys_in_modify(originInfo, keyLst)
+      elif checkType == 'all':
+          resultInfo = filter_keys_in_all(originInfo, keyLst)
+      else:
+          print("异常类型")
     else:
         print("原始解析数据为空")
 
@@ -171,9 +177,6 @@ def readJson(filepath):
 
 # 写json文件
 def writeJsonFile(resultInfo, jsonFile):
-    data = json.dumps(resultInfo, sort_keys=True, indent=2)
-    data = data.encode('utf-8').decode('unicode_escape')
-    print(data)
     with open(jsonFile, 'w+') as fp:
       fp.write(json.dumps(resultInfo, indent=4, ensure_ascii=False))
 
@@ -189,9 +192,29 @@ def debianKeyWordsCheck(keyJson, fail_check_number):
   
     if resultInfo:
         fail_check_number += 1
-        # writeCommentFile(f"[FAIL]: {'/'.join(list(resultInfo.keys()))}敏感词检查不通过")
-        writeCommentFile(f"检测到敏感词{', '.join(list(resultInfo.keys()))}变动")
-        writeJsonFile(resultInfo, "result-{}.json".format(check_type))
+        import datetime
+        current_date = datetime.date.today().strftime("%Y%m%d")
+        commentLog = "{}-result-{}.json".format(BUILD_ID, check_type)
+        # kanbanUrl = f"https://prow.cicd.getdeepin.org/log?job=debian-check&id={BUILD_ID}"
+        # logShowUrl = f"http://ciossapi-dev.uniontech.com/iso/ci-prow/{current_date}/debian-check/{REPO_OWNER}/{REPO_NAME}/{PULL_NUMBER}/{PULL_PULL_SHA}/{commentLog}"
+        logUploaUrl = f"s3://iso/ci-prow/{current_date}/debian-check/{REPO_OWNER}/{REPO_NAME}/{PULL_NUMBER}/{PULL_PULL_SHA}/{commentLog}"
+        # writeCommentFile(f"[检测到敏感词{', '.join(list(resultInfo.keys()))}变动]({kanbanUrl});")
+        # writeCommentFile(f"检测到敏感词{', '.join(list(resultInfo.keys()))}变动;")
+        resultInfoKeys = ', '.join(list(resultInfo.keys()))
+        resultInfoMsg = json.dumps(resultInfo, indent=4)
+        logMsg = f'''
+- 检测到敏感词{resultInfoKeys}变动;
+<details>
+  <summary>详情</summary>
+
+  ```ruby
+    {resultInfoMsg}
+  ```
+</details>
+'''
+        writeCommentFile(logMsg)
+        writeJsonFile(resultInfo, commentLog)
+        os.system(f"s3cmd put {commentLog} {logUploaUrl}")
     #   exit(1)
     else:
       print(f"[PASS]: 敏感词{key_list}检查通过")
@@ -202,7 +225,7 @@ def debianKeyWordsCheck(keyJson, fail_check_number):
 def debianVersionCheck(contents_url, fail_check_number):
   print('debianVersionCheck start', contents_url)
   file_download_url = getRequest(contents_url)['download_url']
-  file_download_url = file_download_url.replace('raw.githubusercontent.com', 'raw.gitmirror.com')
+  # file_download_url = file_download_url.replace('raw.githubusercontent.com', 'raw.gitmirror.com')
   print("file_download_url is ", file_download_url)
   if file_download_url:
     if not os.path.isfile('changelog'): #临时
@@ -245,9 +268,10 @@ def writeCommentFile(commentMsg):
 # post步骤: 任务失败进行评论和添加reviewers
 def postStep(fail_check_number):
     if fail_check_number != 0:
+      writeCommentFile("请联系系统开发review:\n/assign @liujianqiang-niu\n/hold")
       postAction.createPRComment('debian-check')
       postAction.addReviewers()
-      exit(1)
+      # exit(1)
 
 # 检查开始前删除评论文件
 def preStep():
