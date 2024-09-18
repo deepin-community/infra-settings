@@ -15,13 +15,7 @@ data:
         k8s.gcr.io: k8s-gcr.cicd.getdeepin.org
         quay.io: quay.cicd.getdeepin.org
         registry.k8s.io: k8s-registry.cicd.getdeepin.org
-    excludeNamespaces:
-        - kube-system
-        - kube-public
-        - kube-node-lease
-        - registry-proxy
-        - obs
-        - default
+        hub.deepin.com: deepinhub.cicd.getdeepin.org
     includeNamespaces:
         - '*'
     includeRegistries:
@@ -32,3 +26,4 @@ data:
         - "registry.k8s.io"
         - "quay.io"
         - "docker.cloudsmith.io"
+        - "hub.deepin.com"
