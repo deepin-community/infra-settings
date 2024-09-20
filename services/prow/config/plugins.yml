@@ -151,3 +151,5 @@ trigger:
   - deepin-community/kernel
   - deepin-community/Repository-Integration
   ignore_ok_to_test: true
+blunderbuss:
+  exclude_approvers: false
