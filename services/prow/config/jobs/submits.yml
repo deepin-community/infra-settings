@@ -102,6 +102,112 @@ community-sync-to-gitlab: &community-sync-to-gitlab
                 name: gitlab-token-wurongjie
                 key: TOKEN
 
+linyaps-sync-to-gitlab: &linyaps-sync-to-gitlab
+  name: sync-to-gitlab
+  always_run: true
+  labels:
+    app: sync-to-gitlab
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.0.32.61
+        hostnames:
+          - gitlabwh.uniontech.com
+    containers:
+      - name: sync-to-gitlab
+        image: ghcr.cicd.getdeepin.org/myml/git-sync:main
+        imagePullPolicy: Always
+        command:
+          - sh
+        args:
+          - -c
+          - "/git-sync.sh https://github.com/OpenAtom-Linyaps/$REPO_NAME.git https://oauth2:$TOKEN@gitlabwh.uniontech.com/wuhan/deepin/github-mirrors/openatom-linyaps-mirror/${REPO_NAME#.}.git"
+        env:
+          - name: SYNC_BRANCH_PATTERN
+            value: "master develop/* release/*"
+          - name: TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: gitlab-token-wurongjie
+                key: TOKEN
+
+linyaps-sync-to-gitee: &linyaps-sync-to-gitee
+  name: sync-to-gitee
+  always_run: true
+  labels:
+    app: sync-to-gitee
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.0.32.61
+        hostnames:
+          - gitlabwh.uniontech.com
+    containers:
+      - name: sync-to-gitlab
+        image: ghcr.cicd.getdeepin.org/myml/git-sync:main
+        imagePullPolicy: Always
+        command:
+          - sh
+        args:
+          - -c
+          - "SYNC_MIRROR_CACHE=https://oauth2:$GITLAB_TOKEN@gitlabwh.uniontech.com/wuhan/deepin/github-mirrors/openatom-linyaps-mirror/${REPO_NAME#.}.git /git-sync.sh https://github.com/OpenAtom-Linyaps/$REPO_NAME.git https://myml:$GITEE_TOKEN@gitee.com/deepin-community/$REPO_NAME"
+        env:
+          - name: SYNC_BRANCH_PATTERN
+            value: "master develop/* release/*"
+          - name: GITLAB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: gitlab-token-wurongjie
+                key: TOKEN
+          - name: GITEE_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: gitee-token-wurongjie
+                key: TOKEN
+
+community-sync-to-gitcode: &community-sync-to-gitcode
+  name: sync-to-gitcode
+  always_run: true
+  labels:
+    app: sync-to-gitcode
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.0.32.61
+        hostnames:
+          - gitlabwh.uniontech.com
+    containers:
+      - name: sync-to-gitcode
+        image: ghcr.cicd.getdeepin.org/myml/git-sync:v0.0.2
+        imagePullPolicy: Always
+        command:
+          - sh
+        args:
+          - -c
+          - http --ignore-stdin POST "https://api.gitcode.com/api/v5/orgs/deepin-community/repos?access_token=$TOKEN" name=${REPO_NAME#.}; /git-sync.sh https://github.com/deepin-community/$REPO_NAME.git https://wrj97:$TOKEN@gitcode.com/deepin-community/${REPO_NAME#.}.git
+        env:
+          - name: SYNC_FORCE_PUSH
+            value: "true"
+          - name: SYNC_BRANCH_PATTERN
+            value: "master develop/* release/*"
+          - name: TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: gitcode-token-wurongjie
+                key: TOKEN
+
 obs-src-sync: &obs-src-sync
   name: obs-src-sync
   always_run: true
@@ -734,6 +840,7 @@ postsubmits:
   deepin-community:
     - <<: *obs-src-sync
     - <<: *community-sync-to-gitlab
+    - <<: *community-sync-to-gitcode
   peeweep-test:
     - <<: *obs-src-sync
   linuxdeepin/deepin-osconfig:
@@ -759,4 +866,7 @@ postsubmits:
     - <<: *obs-src-sync
     - <<: *linuxdeepin-sync-to-gitlab
   deepin-community/GHC_packages:
-  - <<: *ghc-packages-obs-sync
+    - <<: *ghc-packages-obs-sync
+  OpenAtom-Linyaps:
+    - <<: *linyaps-sync-to-gitlab
+    - <<: *linyaps-sync-to-gitee
