@@ -16,6 +16,9 @@ data:
         quay.io: quay.cicd.getdeepin.org
         registry.k8s.io: k8s-registry.cicd.getdeepin.org
         hub.deepin.com: deepinhub.cicd.getdeepin.org
+    excludeNamespaces:
+        - "registry-proxy"
+        - "default"
     includeNamespaces:
         - '*'
     includeRegistries:
