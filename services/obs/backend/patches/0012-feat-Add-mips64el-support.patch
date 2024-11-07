@@ -1,0 +1,24 @@
+diff --git a/BSCando.pm b/BSCando.pm
+index 82b5b25..e51da6a 100644
+--- a/BSCando.pm
++++ b/BSCando.pm
+@@ -67,6 +67,7 @@ our %cando = (
+ 
+   'mips'    => [ 'mips' ],
+   'mips64'  => [ 'mips64', 'mips:mips32' ],
++  'mips64el' => [ 'mips64el'],
+   'loong64' => [ 'loong64', 'loongarch64' ],
+   'loongarch64' => [ 'loong64', 'loongarch64' ],
+ 
+diff --git a/bs_publish b/bs_publish
+index 2e1f722..6fdaa1b 100755
+--- a/bs_publish
++++ b/bs_publish
+@@ -907,6 +907,7 @@ ARCH.ppc64le ppc64le noarch
+ ARCH.ppc ppc noarch
+ ARCH.riscv64 riscv64 noarch
+ ARCH.loong64 loong64 loongarch64 noarch
++ARCH.mips64el mips64el noarch
+ ARCH.sh4 sh4 noarch
+ ARCH.m68k m68k noarch
+ ARCH.aarch64 aarch64 aarch64_ilp32 noarch
