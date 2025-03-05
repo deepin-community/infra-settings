@@ -21,10 +21,11 @@ headers = {"Authorization": f"token {GITHUB_TOKEN}"}
 
 def read_changelog():
     version = ""
-    rawurl = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/debian/changelog?ref={PULL_PULL_SHA}'
+    #rawurl = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/debian/changelog?ref={PULL_PULL_SHA}'
+    rawurl = f'https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{PULL_PULL_SHA}/debian/changelog'
     res = requests.get(rawurl.replace("+", "%2B"), headers=headers)
     if res.status_code == 200:
-        content = str(base64.b64decode(res.json()["content"]), encoding='utf-8')
+        content = str(res.content, encoding='utf-8')
         line = content.split("\n")[0]
         lineinfo = line.split(" ")
         if len(lineinfo) > 1 :
@@ -34,7 +35,7 @@ def read_changelog():
 
 
 def need_hold_version():
-    need_hold = False
+    need_hold_msg = None
     new_version = read_changelog()
     response = requests.get(HOLD_VERSION_ISSUE_API, headers=headers)
     if new_version != "" and response.status_code == 200:
@@ -49,16 +50,21 @@ def need_hold_version():
                     hold_name = lineinfo[3]
                     hold_version = lineinfo[4]
                     if REPO_NAME in hold_name or hold_name in REPO_NAME:
-                        if hold_version != new_version:
-                            need_hold = True
+                        if hold_version.contains('-'):
+                            if hold_version.rsplit('-', 1)[0] != new_version.rsplit('-', 1)[0]:
+                                need_hold_msg = "quilt包的上游版本号变更"
+                                print(f"{REPO_NAME} need hold version: {hold_version}, now version is {new_version}")
+                        elif hold_version.rsplit('.', 1)[0] != new_version.rsplit('.', 1)[0]:
+                            need_hold_msg = "native包的大版本号变更"
                             print(f"{REPO_NAME} need hold version: {hold_version}, now version is {new_version}")
                             break
 
-    return need_hold
+    return need_hold_msg
 
-if need_hold_version():
+msg = need_hold_version()
+if msg != None:
     url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{PULL_NUMBER}/comments"
-    comment_body = f"/hold\n该组件版本被锁定，详情见"
+    comment_body = f"/hold\n 因为该{msg}，详情见"
 
     holded = False
     response = requests.get(url, headers=headers)
