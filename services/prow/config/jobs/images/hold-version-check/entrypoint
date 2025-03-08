@@ -49,11 +49,14 @@ def need_hold_version():
                 if len(lineinfo) == 6:
                     hold_name = lineinfo[3]
                     hold_version = lineinfo[4]
-                    if REPO_NAME in hold_name or hold_name in REPO_NAME:
-                        if hold_version.contains('-'):
-                            if hold_version.rsplit('-', 1)[0] != new_version.rsplit('-', 1)[0]:
+                    if REPO_NAME.strip() == hold_name.strip():# or REPO_NAME in hold_name or hold_name in REPO_NAME:
+                        if '-' in hold_version or '-' in new_version:
+                            #print(hold_version.rsplit('-', 1)[0].strip())
+                            #print(new_version.rsplit('-', 1)[0].strip())
+                            if hold_version.rsplit('-', 1)[0].strip() != new_version.rsplit('-', 1)[0].strip():
                                 need_hold_msg = "quilt包的上游版本号变更"
                                 print(f"{REPO_NAME} need hold version: {hold_version}, now version is {new_version}")
+                            break
                         elif hold_version.rsplit('.', 1)[0] != new_version.rsplit('.', 1)[0]:
                             need_hold_msg = "native包的大版本号变更"
                             print(f"{REPO_NAME} need hold version: {hold_version}, now version is {new_version}")
