@@ -280,6 +280,56 @@ obs-src-sync: &obs-src-sync
     testgrid-alert-email: hudeng@deepin.org
     description: Runs Prow obs-src-sync job to sync github pr merged code to obs.
 
+desktop-translator: &desktop-translator
+  name: desktop-translator
+  always_run: true
+  decorate: true
+  labels:
+    app: desktop-translator
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.20.64.82
+        hostnames:
+          - api.github.com
+      - ip: 10.20.64.83
+        hostnames:
+          - github.githubassets.com
+      - ip: 10.20.64.84
+        hostnames:
+          - raw.githubusercontent.com
+      - ip: 10.20.64.85
+        hostnames:
+          - collector.github.com
+      - ip: 10.20.64.86
+        hostnames:
+          - avatars.githubusercontent.com
+      - ip: 8.136.204.218
+        hostnames:
+          - build.deepin.com
+    containers:
+      - name: desktop-translator
+        image: "hub.deepin.com/prow/desktop-translator:latest"
+        command:
+          - /app/entrypoint.py
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: obs-api-credential
+                key: github-token
+  annotations:
+    testgrid-num-failures-to-alert: "6"
+    testgrid-alert-stale-results-hours: "12"
+    testgrid-dashboards: sig-deepin-cicd
+    testgrid-tab-name: desktop-translator
+    testgrid-alert-email: hudeng@deepin.org
+    description: Runs Prow desktop-translator job for translating ts files to desktop files.
+
 github-pr-review-ci: &github-pr-review-ci
   name: github-pr-review-ci
   decorate: false
