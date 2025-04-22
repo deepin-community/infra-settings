@@ -77,7 +77,7 @@ def get_filtered_files_by_commit(owner: str, repo: str, commit_sha: str):
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
-    file_pattern = re.compile(r'.*/desktop*\.ts$')  # 正则过滤规则
+    file_pattern = re.compile(r'.*/desktop.*\.ts$')  # 正则过滤规则
     filtered_files = []
 
     try:
@@ -224,7 +224,7 @@ def get_desktop_file_path_from_ts_path(desktop_ts_path):
                         desktop_entry_name = source.text.strip()
                         break
     except FileNotFoundError:
-        logging.error(f"File not found: {desktop_ts_path}")
+        logging.error(f"File desktop.ts not found: {desktop_ts_path}")
         return None
     except ET.ParseError as e:
         logging.error(f"Failed to parse XML in {desktop_ts_path}: {e}")

@@ -284,6 +284,11 @@ desktop-translator: &desktop-translator
   name: desktop-translator
   always_run: true
   decorate: true
+  decoration_config:
+    timeout: 30m
+  branches:
+    - ^master*$
+    - ^main*$
   labels:
     app: desktop-translator
   spec:
