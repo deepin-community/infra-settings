@@ -9,6 +9,7 @@ RUN cp /etc/apk/repositories /etc/apk/repositories.bak && \
 RUN apk add --no-cache \
     git \
     perl \
+    bash \
     perl-xml-libxml \
     perl-config-tiny \
     py3-requests && \
