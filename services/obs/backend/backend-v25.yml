@@ -818,6 +818,7 @@ data:
         <arch>riscv64</arch>
         <arch>loong64</arch>
         <arch>mips64el</arch>
+        <arch>sw64</arch>
       </schedulers>
       <unlisted_projects_filter>^home:.+</unlisted_projects_filter>
       <unlisted_projects_filter_description>home projects</unlisted_projects_filter_description>
