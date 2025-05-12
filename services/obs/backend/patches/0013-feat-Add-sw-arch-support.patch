@@ -1,0 +1,38 @@
+From 170dafb07927ac1fbb66a8e87d081819ec0b0fce Mon Sep 17 00:00:00 2001
+From: hudeng <hudeng@deepin.org>
+Date: Fri, 11 Oct 2024 03:13:33 +0000
+Subject: [PATCH] feat: Add sw arch support
+
+---
+ BSCando.pm | 2 ++
+ bs_publish | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/BSCando.pm b/BSCando.pm
+index 82b5b25..f83bd9d 100644
+--- a/BSCando.pm
++++ b/BSCando.pm
+@@ -69,6 +69,8 @@ our %cando = (
+   'mips64'  => [ 'mips64', 'mips:mips32' ],
+   'loong64' => [ 'loong64', 'loongarch64' ],
+   'loongarch64' => [ 'loong64', 'loongarch64' ],
++  'sw_64'   => [ 'sw_64', 'sw64' ],
++  'sw64'   => [ 'sw_64', 'sw64' ],
+ 
+   'm68k'    => [ 'm68k' ],
+ 
+diff --git a/bs_publish b/bs_publish
+index 2e1f722..c2de29b 100755
+--- a/bs_publish
++++ b/bs_publish
+@@ -907,6 +907,8 @@ ARCH.ppc64le ppc64le noarch
+ ARCH.ppc ppc noarch
+ ARCH.riscv64 riscv64 noarch
+ ARCH.loong64 loong64 loongarch64 noarch
++ARCH.sw_64 sw_64 sw64 noarch
++ARCH.sw64 sw64 sw_64 noarch
+ ARCH.sh4 sh4 noarch
+ ARCH.m68k m68k noarch
+ ARCH.aarch64 aarch64 aarch64_ilp32 noarch
+-- 
+2.35.3
