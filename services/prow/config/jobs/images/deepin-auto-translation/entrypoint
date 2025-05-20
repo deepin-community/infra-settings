@@ -8,10 +8,10 @@ ln -s $(pwd) /app/deepin-auto-translation/repo/${REPO_OWNER}/${REPO_NAME}
 # 设置git配置
 git config --global user.name "deepin-ci-robot"
 git config --global user.email "packages@deepin.org"
-git -C /app/deepin-auto-translation/deepin-auto-translation pull || true
+git -C /app/deepin-auto-translation pull || true
 
 # 设置transifix配置
-echo "- o:${REPO_OWNER}:p:${REPO_OWNER}" > /app/deepin-auto-translation/transifex-projects.yml
+echo "- o:${REPO_OWNER}:p:${REPO_NAME}" > /app/deepin-auto-translation/transifex-projects.yml
 
 # 启动翻译脚本
 cd /app/deepin-auto-translation && BUN_INSTALL="~/.bun" ~/.bun/bin/bun index.ts
