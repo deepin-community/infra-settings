@@ -335,6 +335,67 @@ desktop-translator: &desktop-translator
     testgrid-alert-email: hudeng@deepin.org
     description: Runs Prow desktop-translator job for translating ts files to desktop files.
 
+deepin-auto-translation: &deepin-auto-translation
+  name: deepin-auto-translation
+  decorate: true
+  decoration_config:
+    timeout: 30m
+  always_run: true
+  run_if_changed: "\\.ts$"
+  labels:
+    app: deepin-auto-translation
+  spec:
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    hostAliases:
+      - ip: 10.20.64.81
+        hostnames:
+          - github.com
+      - ip: 10.20.64.82
+        hostnames:
+          - api.github.com
+      - ip: 10.20.64.83
+        hostnames:
+          - github.githubassets.com
+      - ip: 10.20.64.84
+        hostnames:
+          - raw.githubusercontent.com
+      - ip: 10.20.64.85
+        hostnames:
+          - collector.github.com
+      - ip: 10.20.64.86
+        hostnames:
+          - avatars.githubusercontent.com
+    containers:
+      - name: deepin-auto-translation
+        image: "hub.deepin.com/prow/deepin-auto-translation:latest"
+        command:
+          - /app/entrypoint
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: obs-api-credential
+                key: github-token
+        volumeMounts:
+          - name: config
+            mountPath: /app/deepin-auto-translation/secrets.ts
+            subPath: secrets.ts
+            readOnly: true
+          - name: config
+            mountPath: /root/.transifexrc
+            subPath: transifexrc
+            readOnly: true
+    volumes:
+      - name: config
+        configMap:
+          name: deepin-auto-translation-cfg
+  annotations:
+    testgrid-dashboards: sig-deepin-cicd
+    testgrid-tab-name: deepin-auto-translation
+    testgrid-alert-email: hudeng@deepin.org
+    description: Runs Prow deepin-auto-translation job to translate ts files by using llm ai models.
+
 github-pr-review-ci: &github-pr-review-ci
   name: github-pr-review-ci
   decorate: false
@@ -864,6 +925,7 @@ presubmits:
     - <<: *debian-check
     - <<: *api-check
     - <<: *static-check
+    - <<: *deepin-auto-translation
   deepin-community/kernel:
     - <<: *github-pr-review-ci
   deepin-community:
@@ -875,17 +937,22 @@ presubmits:
   linuxdeepin/deepin-osconfig:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
+    - <<: *deepin-auto-translation
   linuxdeepin/linglong:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
+    - <<: *deepin-auto-translation
   linuxdeepin/dde-shell:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
+    - <<: *deepin-auto-translation
   linuxdeepin/dde-tray-loader:
     - <<: *github-trigger-obs-ci
     - <<: *github-pr-review-ci
+    - <<: *deepin-auto-translation
   linuxdeepin:
     - <<: *github-pr-review-ci
+    - <<: *deepin-auto-translation
   linuxdeepin/treeland.private:
     - <<: *github-trigger-obs-ci
   deepin-community/GHC_packages:
