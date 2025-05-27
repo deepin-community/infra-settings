@@ -341,7 +341,7 @@ deepin-auto-translation: &deepin-auto-translation
   decoration_config:
     timeout: 240m
   always_run: true
-  run_if_changed: ".ts$"
+  run_if_changed: '\.ts$'
   labels:
     app: deepin-auto-translation
   spec:
