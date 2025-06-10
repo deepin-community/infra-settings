@@ -1,0 +1,13 @@
+diff --git a/services/obs/api/scm_webhook.rb b/services/obs/api/scm_webhook.rb
+index ca59682..71898e9 100644
+--- a/services/obs/api/scm_webhook.rb
++++ b/services/obs/api/scm_webhook.rb
+@@ -25,7 +25,7 @@ class SCMWebhook
+   end
+ 
+   def updated_pull_request?
+-    (github_pull_request? && @payload[:action] == 'synchronize') ||
++    (github_pull_request? && @payload[:action] == 'synchronize') && !(@payload.fetch(:title, '').include?('skip CI')) ||
+       (gitlab_merge_request? && @payload[:action] == 'update') ||
+       (gitea_pull_request? && @payload[:action] == 'synchronized')
+   end
