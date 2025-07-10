@@ -23,6 +23,15 @@ deck:
           name: podinfo
         required_files:
           - podinfo.json
+  rerun_auth_configs:
+    '*':
+      github_users:
+        - "hudeng-go"
+        - "mangosteens"
+        - "lzwind"
+        - "Zeno-sole"
+        - "myml"
+        - "toberyan"
 plank:
   job_url_prefix_config:
     '*': 'https://prow.deepin.org/view/'
