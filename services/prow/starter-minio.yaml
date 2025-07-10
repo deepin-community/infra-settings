@@ -566,9 +566,13 @@ spec:
         - --github-graphql-endpoint=http://ghproxy/graphql
         - --s3-credentials-file=/etc/s3-credentials/service-account.json
         - --spyglass=true
+        - --rerun-creates-job
         #- --github-app-id=$(GITHUB_APP_ID)
         #- --github-app-private-key-path=/etc/github/cert
         - --github-token-path=/etc/github/cert
+        - --github-oauth-config-file=/etc/githuboauth/secret
+        - --oauth-url=/github-login
+        - --cookie-secret=/etc/cookie/secret
         env:
         - name: GITHUB_APP_ID
           valueFrom:
@@ -590,6 +594,12 @@ spec:
           readOnly: true
         - name: s3-credentials
           mountPath: /etc/s3-credentials
+          readOnly: true
+        - name: oauth-config
+          mountPath: /etc/githuboauth
+          readOnly: true
+        - name: cookie-secret
+          mountPath: /etc/cookie
           readOnly: true
         livenessProbe:
           httpGet:
@@ -617,6 +627,12 @@ spec:
       - name: s3-credentials
         secret:
           secretName: s3-credentials
+      - name: oauth-config
+        secret:
+            secretName: github-oauth-config
+      - name: cookie-secret
+        secret:
+            secretName: cookie
 ---
 apiVersion: v1
 kind: Service
@@ -934,7 +950,7 @@ rules:
       # Required when deck runs with `--rerun-creates-job=true`
       # **Warning:** Only use this for non-public deck instances, this allows
       # anyone with access to your Deck instance to create new Prowjobs
-      # - create
+      - create
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
