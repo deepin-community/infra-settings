@@ -954,8 +954,6 @@ presubmits:
   linuxdeepin:
     - <<: *github-pr-review-ci
     - <<: *deepin-auto-translation
-  linuxdeepin/treeland.private:
-    - <<: *github-trigger-obs-ci
   deepin-community/GHC_packages:
     - <<: *ghc-packages-obs-ci
 
@@ -985,9 +983,6 @@ postsubmits:
   linuxdeepin:
     - <<: *linuxdeepin-sync-to-gitlab
     - <<: *linuxdeepin-sync-to-gitee
-  linuxdeepin/treeland.private:
-    - <<: *obs-src-sync
-    - <<: *linuxdeepin-sync-to-gitlab
   deepin-community/GHC_packages:
     - <<: *ghc-packages-obs-sync
   OpenAtom-Linyaps:
