@@ -10,17 +10,24 @@ pr_number = os.environ.get("PULL_NUMBER", "1")
 github_token = os.environ.get("GITHUB_TOKEN")
 codegeex_token = os.environ.get("CODEGEEX_TOKEN")
 codegeex_taskid = os.environ.get("CODEGEEX_TASKID")
+dify_url = os.environ.get("DIFY_URL")
+dify_api_key = os.environ.get("DIFY_API_KEY")
+dify_user = os.environ.get("DIFY_USER")
 
 if not github_token:
     print("请设置环境变量 GITHUB_TOKEN")
     sys.exit(1)
 
-if not codegeex_token:
-    print("请设置环境变量 CODEGEEX_TOKEN")
+if not dify_url:
+    print("请设置环境变量 DIFY_URL")
     sys.exit(1)
 
-if not codegeex_taskid:
-    print("请设置环境变量 CODEGEEX_TASKID")
+if not dify_api_key:
+    print("请设置环境变量 DIFY_API_KEY")
+    sys.exit(1)
+
+if not dify_user:
+    print("请设置环境变量 DIFY_USER")
     sys.exit(1)
 
 try:
@@ -37,30 +44,30 @@ try:
     response = requests.get(patch_data_url)
     patch_content = response.text
     if not response.ok:
-        raise Exception("获取pr的patch地址错误: " + patch_content)
+        raise Exception("获取pr的patch内容错误: " + patch_content)
 
-    # codegeex patch review
-    codegeex_url = 'https://codegeex.cn/prod/code/chatCodeSseV3/chat?stream=false'
-    codegeex_headers = {
-        'code-token' : codegeex_token,
-        'Content-Type': 'application/json'
+    # dify chat-messages 调用
+    dify_chat_url = f"{dify_url}/v1/chat-messages"
+    dify_headers = {
+        "Authorization": f"Bearer {dify_api_key}",
+        "Content-Type": "application/json"
     }
 
     review_data = {
-        "command":"review",
-        "code": patch_content,
-        'talkId': codegeex_taskid,
-        'locale' : "zh",
-        "model": "codegeex-lite",
-        "max_new_tokens": 64,
-        "lang": "Python",
+        "inputs": {},
+        "query": patch_content,
+        "response_mode": "blocking",
+        "conversation_id": "",
+        "user": dify_user,
     }
 
-    review_response = requests.post(codegeex_url, headers=codegeex_headers, json=review_data)
+    review_response = requests.post(dify_chat_url, headers=dify_headers, json=review_data)
     if not review_response.ok:
         raise Exception("获取pr的patch review结果失败: " + review_response.text)
 
-    review_result = review_response.json()["text"]
+    review_result = review_response.json().get("answer", "")
+    if not review_result:
+        raise Exception("获取pr的patch review结果为空")
 
     # 获取现有的评论列表
     url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pr_number}/comments'
