@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 
 import os
+import re
 import sys
 import requests
 
 repo_owner = os.environ.get("REPO_OWNER", "linuxdeepin")
 repo_name = os.environ.get("REPO_NAME", "dtk")
 pr_number = os.environ.get("PULL_NUMBER", "1")
+pull_sha = os.environ.get("PULL_PULL_SHA", "")
 github_token = os.environ.get("GITHUB_TOKEN")
 codegeex_token = os.environ.get("CODEGEEX_TOKEN")
 codegeex_taskid = os.environ.get("CODEGEEX_TASKID")
@@ -95,5 +97,43 @@ try:
     response = requests.post(url, json={'body': comment_body}, headers=headers)
     if not response.ok:
         raise Exception("pr评论review结果失败: " + response.text)
+
+    # 解析评分
+    score_match = re.search(r"★\s*总体评分\s*[:：]\s*(\d+)\s*分", review_result)
+    if score_match:
+        score = int(score_match.group(1))
+        status_context = "deepin-pr-review"
+        status_description = f"总体评分：{score}分"
+
+        if score < 70:
+            status_state = "failure"
+            status_description += " - 评分低于70分，PR被拦截，请根据 review 建议修改后重试"
+            print(f"\n✖ PR 审查不通过，评分 {score} 分，低于 70 分")
+            print(f"   拦截原因：{status_description}")
+            if pull_sha:
+                status_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/statuses/{pull_sha}"
+                status_data = {
+                    "state": status_state,
+                    "description": status_description,
+                    "context": status_context,
+                }
+                status_resp = requests.post(status_url, json=status_data, headers=headers)
+                if not status_resp.ok:
+                    print(f"   警告：设置commit状态失败: {status_resp.text}")
+            sys.exit(1)
+        else:
+            status_state = "success"
+            status_description += " - 通过"
+            print(f"\n✓ PR 审查通过，评分 {score} 分")
+            if pull_sha:
+                status_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/statuses/{pull_sha}"
+                status_data = {
+                    "state": status_state,
+                    "description": status_description,
+                    "context": status_context,
+                }
+                requests.post(status_url, json=status_data, headers=headers)
+    else:
+        print("\n⚠ 未从 review 结果中解析到评分，跳过评分检查")
 except Exception as e:
     print(e)
