@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import os
 import re
@@ -12,9 +12,9 @@ pull_sha = os.environ.get("PULL_PULL_SHA", "")
 github_token = os.environ.get("GITHUB_TOKEN")
 codegeex_token = os.environ.get("CODEGEEX_TOKEN")
 codegeex_taskid = os.environ.get("CODEGEEX_TASKID")
-dify_url = os.environ.get("DIFY_URL")
+dify_url = os.environ.get("DIFY_URL", "http://zl.uniontech.com:8220/trigger")
 dify_api_key = os.environ.get("DIFY_API_KEY")
-dify_user = os.environ.get("DIFY_USER")
+dify_user = os.environ.get("DIFY_USER", "admin")
 
 if not github_token:
     print("请设置环境变量 GITHUB_TOKEN")
@@ -33,43 +33,29 @@ if not dify_user:
     sys.exit(1)
 
 try:
-    # 获取patch数据的URL
-    patch_data_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pr_number}"
     headers = {"Authorization": f"token {github_token}"}
-    response = requests.get(patch_data_url, headers=headers)
-    if not response.ok:
-        raise Exception("获取pr的patch地址错误: " + response.text)
-    pr_data = response.json()
-    patch_data_url = pr_data["diff_url"]
 
-    # 获取patch数据的内容
-    response = requests.get(patch_data_url)
-    patch_content = response.text
-    if not response.ok:
-        raise Exception("获取pr的patch内容错误: " + patch_content)
+    # 构造PR分析地址
+    pr_url = f"https://github.com/{repo_owner}/{repo_name}/pull/{pr_number}"
 
-    # dify chat-messages 调用
-    dify_chat_url = f"{dify_url}/v1/chat-messages"
-    dify_headers = {
-        "Authorization": f"Bearer {dify_api_key}",
-        "Content-Type": "application/json"
+    # 调用AI审核接口
+    ai_review_data = {
+        "params": {
+            "分析地址": pr_url
+        }
     }
 
-    review_data = {
-        "inputs": {},
-        "query": patch_content,
-        "response_mode": "blocking",
-        "conversation_id": "",
-        "user": dify_user,
-    }
-
-    review_response = requests.post(dify_chat_url, headers=dify_headers, json=review_data)
+    review_response = requests.post(
+        dify_url,
+        auth=(dify_user, dify_api_key),
+        json=ai_review_data
+    )
     if not review_response.ok:
-        raise Exception("获取pr的patch review结果失败: " + review_response.text)
+        raise Exception("AI审核请求失败: " + review_response.text)
 
-    review_result = review_response.json().get("answer", "")
+    review_result = review_response.json().get("report", "")
     if not review_result:
-        raise Exception("获取pr的patch review结果为空")
+        raise Exception("AI审核结果为空")
 
     # 获取现有的评论列表
     url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pr_number}/comments'
@@ -81,22 +67,22 @@ try:
     # 查找是否已存在包含"deepin pr auto review"的评论
     existing_comment = None
     for comment in comments:
-        if "deepin pr auto review" in comment['body']:
+        if "deepin pr auto review" in comment['body'].lower():
             existing_comment = comment
             break
 
-    # 如果找到了现有评论，则更新评论内容；否则创建新评论
-    comment_body = "### deepin pr auto review\n" + review_result
+    # 如果找到了现有评论，则删除旧评论；否则创建新评论
+    comment_body = "### deepin pr auto review\n\n" + review_result
     if existing_comment:
         comment_id = existing_comment['id']
         comment_url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues/comments/{comment_id}'
-        response = requests.delete(comment_url, json={'body': comment_body}, headers=headers)
+        response = requests.delete(comment_url, headers=headers)
         if not response.ok:
-            raise Exception("pr评论更新review结果失败: " + response.text)
+            raise Exception("pr评论删除失败: " + response.text)
 
     response = requests.post(url, json={'body': comment_body}, headers=headers)
     if not response.ok:
-        raise Exception("pr评论review结果失败: " + response.text)
+        raise Exception("pr评论提交失败: " + response.text)
 
     # 解析评分
     score_match = re.search(r"★\s*总体评分\s*[:：]\s*(\d+)\s*分", review_result)
