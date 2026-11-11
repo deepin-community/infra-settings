@@ -19,26 +19,311 @@ rabbitmq_username = os.environ.get('rabbitmq_username')
 rabbitmq_password = os.environ.get('rabbitmq_password')
 rabbitmq_queue = os.environ.get('rabbitmq_queue')
 
-# 创建RabbitMQ连接
-credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
-parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, credentials=credentials,
-                heartbeat=0, connection_attempts=3, socket_timeout=300)
-connection = pika.BlockingConnection(parameters)
-channel = connection.channel()
-
 obs_host = os.environ.get('OBSHOST')
 obs_username = os.environ.get('OSCUSER')
 obs_password = os.environ.get('OSCPASS')
 github_integration_repo = os.environ.get('GITHUB_INTEGRATION_REPO', "peeweep-test/Repository-Integration")
 github_token = os.environ.get('GITHUB_TOKEN')
 
-# 修改这里的参数值，使其与队列的当前设置相匹配
-args = {
-    'durable': True  # 确保这里的值为True或False，与队列的当前设置相匹配
-}
+# ==================== PR CI 警告日志处理相关函数 ====================
 
-# 声明队列
-channel.queue_declare(queue=rabbitmq_queue, durable=args['durable'], arguments=args)
+COMMENT_MARKER_PREFIX = "<!-- OBS_CI_BUILD_WARNING_REPORT"
+MAX_COMMENT_LENGTH = 60000
+MAX_WARNINGS_PER_ARCH = 300
+MAX_ARCH_LOG_LENGTH = 30000
+
+LINTIAN_START_PATTERN = re.compile(
+    r'^(?:\[\s*\d+s\]\s*)?(?:Running lintian|\+?\s*lintian(?:\s+-[a-zA-Z]+)*\s+)',
+    re.IGNORECASE
+)
+
+LINTIAN_END_PATTERN = re.compile(
+    r'^(?:\[\s*\d+s\]\s*)?(?:cleanup_and_exit|Moving\s+|same-build-result|recipe_run_post_hook|\+\s*test\b|\+\s*\[|\+\s*cleanup_and_exit)',
+    re.IGNORECASE
+)
+
+LINTIAN_WARNING_PATTERN = re.compile(
+    r'^(?:\[\s*\d+s\]\s*)?(?:W:\s+|lintian:\s*warning:\s*|warning:\s*)',
+    re.IGNORECASE
+)
+
+LINTIAN_NOTE_PATTERN = re.compile(
+    r'^(?:\[\s*\d+s\]\s*)?N:\s*',
+    re.IGNORECASE
+)
+
+LINTIAN_OTHER_TAG_PATTERN = re.compile(
+    r'^(?:\[\s*\d+s\]\s*)?[EIPXO]:\s*',
+    re.IGNORECASE
+)
+
+def extract_warnings_from_log(log_text_or_lines, max_warnings=MAX_WARNINGS_PER_ARCH, max_chars=MAX_ARCH_LOG_LENGTH):
+    """
+    定位并过滤 Lintian 运行日志，从中提取所有警告（W:）及说明信息，
+    并在超出限制时进行保护性截断。
+    返回 (warning_count, formatted_text)
+    """
+    if isinstance(log_text_or_lines, str):
+        lines = log_text_or_lines.splitlines()
+    else:
+        lines = log_text_or_lines
+
+    extracted = []
+    warning_count = 0
+    total_chars = 0
+    in_lintian_section = False
+    is_capturing_context = False
+    truncated = False
+
+    for line in lines:
+        if line is None:
+            continue
+        line_str = line if isinstance(line, str) else str(line, errors='replace')
+
+        # 检查是否进入 Lintian 运行阶段
+        if not in_lintian_section:
+            if LINTIAN_START_PATTERN.search(line_str):
+                in_lintian_section = True
+            continue
+
+        # 检查是否已退出 Lintian 运行阶段
+        if LINTIAN_END_PATTERN.search(line_str):
+            break
+
+        # 检查是否是 Lintian 警告行 (W: 或 lintian: warning: 等)
+        if LINTIAN_WARNING_PATTERN.search(line_str):
+            warning_count += 1
+            if warning_count > max_warnings or total_chars >= max_chars:
+                truncated = True
+                break
+            extracted.append(line_str)
+            total_chars += len(line_str) + 1
+            is_capturing_context = True
+            continue
+
+        # 如果当前正在捕获某个警告的详细说明 (N: 注释)
+        if is_capturing_context:
+            if LINTIAN_NOTE_PATTERN.search(line_str):
+                extracted.append(line_str)
+                total_chars += len(line_str) + 1
+                if total_chars >= max_chars:
+                    truncated = True
+                    break
+            elif LINTIAN_OTHER_TAG_PATTERN.search(line_str):
+                # 遇到了其他 tag（如 E:, I:, P:），说明当前警告的上下文结束
+                is_capturing_context = False
+            else:
+                # 遇到其他普通输出，停止捕获上下文
+                is_capturing_context = False
+
+    if truncated:
+        extracted.append(f"\n... (警告过多，已截断，仅展示前 {len(extracted)} 行内容，完整日志请查看 OBS 构建链接)")
+
+    return warning_count, "\n".join(extracted)
+
+def fetch_obs_build_log(obs_host, obs_username, obs_password, project, repository, arch, package):
+    """
+    通过 OBS REST API 获取对应构建包的完整原始构建日志
+    GET /build/{project}/{repository}/{arch}/{package}/_log?nostream=1
+    """
+    url = f"{obs_host}/build/{project}/{repository}/{arch}/{package}/_log"
+    try:
+        response = requests.get(
+            url,
+            auth=HTTPBasicAuth(obs_username, obs_password),
+            params={"nostream": "1"},
+            stream=True,
+            timeout=60
+        )
+        if response.status_code == 200:
+            lines = []
+            line_count = 0
+            for line in response.iter_lines(decode_unicode=True):
+                if line is not None:
+                    lines.append(line)
+                    line_count += 1
+                    if line_count > 200000:
+                        lines.append("... (日志超过 200,000 行，停止读取)")
+                        break
+            return lines
+        else:
+            print(f"[WarningReporter] Failed to fetch OBS build log from {url}, status: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"[WarningReporter] Exception fetching OBS build log: {e}")
+        return None
+
+def resolve_pr_number(project, full_name, sha, github_token):
+    """
+    解析 PR 编号：
+    1. 首选从 OBS project 名称中正则提取（如 deepin:CI:linuxdeepin:dtkcore:PR-12）
+    2. 若为 topic 分支等情况，通过 GitHub Commit Pulls API 查询
+    """
+    pr_match = re.search(r'PR-(\d+)', project)
+    if pr_match:
+        return int(pr_match.group(1))
+
+    if github_token and full_name and sha:
+        try:
+            headers = {
+                "Authorization": f"token {github_token}",
+                "Content-Type": "application/vnd.github+json"
+            }
+            url = f"https://api.github.com/repos/{full_name}/commits/{sha}/pulls"
+            resp = requests.get(url, headers=headers, timeout=20)
+            if resp.status_code == 200:
+                pulls = resp.json()
+                if pulls and isinstance(pulls, list) and len(pulls) > 0:
+                    return pulls[0].get('number')
+        except Exception as e:
+            print(f"[WarningReporter] Exception resolving PR number for commit {sha}: {e}")
+
+    return None
+
+def build_section_block(repository, arch, count, warning_text):
+    """
+    生成单个架构的 Markdown 默认折叠块
+    """
+    return (
+        f"<!-- SECTION: {repository}/{arch} -->\n"
+        f"<details>\n"
+        f"<summary><b>{repository} / {arch}</b> (Lintian 警告: {count} 条)</summary>\n\n"
+        f"```text\n"
+        f"{warning_text}\n"
+        f"```\n"
+        f"</details>\n"
+        f"<!-- END_SECTION: {repository}/{arch} -->"
+    )
+
+def parse_comment_sections(body):
+    """
+    解析已有评论中包含的所有架构折叠块，返回 { 'repository/arch': section_markdown }
+    """
+    sections = {}
+    pattern = r'<!-- SECTION: (?P<key>[^\s]+) -->\n(?P<content>.*?)\n<!-- END_SECTION: (?P=key) -->'
+    for match in re.finditer(pattern, body, re.DOTALL):
+        key = match.group('key')
+        full_block = match.group(0)
+        sections[key] = full_block
+    return sections
+
+def extract_comment_commit_sha(body):
+    """
+    提取评论中记录的 commit sha
+    """
+    match = re.search(r'<!-- OBS_CI_BUILD_WARNING_REPORT commit: ([a-zA-Z0-9]+) -->', body)
+    if match:
+        return match.group(1)
+    return None
+
+def generate_comment_body(sha, sections):
+    """
+    根据所有架构的折叠块生成聚合评论主体
+    """
+    short_sha = sha[:8] if sha else ""
+    if not sections:
+        return (
+            f"<!-- OBS_CI_BUILD_WARNING_REPORT commit: {sha} -->\n"
+            f"### ✅ OBS CI 构建警告日志 (Commit: `{short_sha}`)\n\n"
+            f"所有架构构建完成，未发现 Lintian 警告。"
+        )
+
+    header = (
+        f"<!-- OBS_CI_BUILD_WARNING_REPORT commit: {sha} -->\n"
+        f"### ⚠️ OBS CI 构建警告日志 (Commit: `{short_sha}`)\n\n"
+        f"> 提示：以下为 OBS CI 构建中 Lintian 检测到的警告信息，默认折叠，点击展开查看详情。完整日志请参阅对应构建状态链接。\n\n"
+    )
+    sorted_keys = sorted(sections.keys())
+    content = "\n\n".join(sections[k] for k in sorted_keys)
+    body = header + content
+    if len(body) > MAX_COMMENT_LENGTH:
+        body = body[:MAX_COMMENT_LENGTH - 100] + "\n\n... (评论内容过长，已截断)"
+    return body
+
+def sync_pr_warning_comment(full_name, pr_number, sha, repository, arch, warning_count, warning_text, github_token):
+    """
+    将特定架构的警告日志同步到 PR 评论中：
+    - 若无现有评论且当前架构无警告，跳过不发；
+    - 若已有评论，通过 PATCH 更新当前架构部分；若为新 commit，则重置更新；
+    - 若无现有评论且有警告，通过 POST 创建新评论。
+    """
+    if not github_token or not full_name or not pr_number:
+        return
+
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Content-Type": "application/vnd.github+json"
+    }
+    comments_url = f"https://api.github.com/repos/{full_name}/issues/{pr_number}/comments"
+
+    try:
+        resp = requests.get(comments_url, headers=headers, timeout=30)
+        if resp.status_code != 200:
+            print(f"[WarningReporter] Failed to list comments on {full_name}#{pr_number}: {resp.status_code}")
+            return
+        comments = resp.json()
+    except Exception as e:
+        print(f"[WarningReporter] Exception querying comments: {e}")
+        return
+
+    existing_comment = None
+    if isinstance(comments, list):
+        for c in comments:
+            body = c.get('body', '')
+            if COMMENT_MARKER_PREFIX in body:
+                existing_comment = c
+                break
+
+    arch_key = f"{repository}/{arch}"
+
+    if not existing_comment:
+        if warning_count == 0:
+            print(f"[WarningReporter] No warnings for {arch_key} and no existing comment. Skipping comment creation.")
+            return
+
+        sections = {arch_key: build_section_block(repository, arch, warning_count, warning_text)}
+        comment_body = generate_comment_body(sha, sections)
+        try:
+            create_resp = requests.post(comments_url, headers=headers, json={"body": comment_body}, timeout=30)
+            if create_resp.status_code in (200, 201):
+                print(f"[WarningReporter] Successfully created warning comment on {full_name}#{pr_number} for {arch_key}.")
+            else:
+                print(f"[WarningReporter] Failed to create comment: {create_resp.status_code} {create_resp.text}")
+        except Exception as e:
+            print(f"[WarningReporter] Exception creating comment: {e}")
+        return
+
+    comment_id = existing_comment.get('id')
+    old_body = existing_comment.get('body', '')
+    old_sha = extract_comment_commit_sha(old_body)
+    comment_patch_url = f"https://api.github.com/repos/{full_name}/issues/comments/{comment_id}"
+
+    if old_sha and old_sha != sha:
+        print(f"[WarningReporter] Commit changed from {old_sha} to {sha}. Resetting comment for {arch_key}.")
+        if warning_count == 0:
+            sections = {}
+        else:
+            sections = {arch_key: build_section_block(repository, arch, warning_count, warning_text)}
+        new_body = generate_comment_body(sha, sections)
+    else:
+        sections = parse_comment_sections(old_body)
+        if warning_count > 0:
+            sections[arch_key] = build_section_block(repository, arch, warning_count, warning_text)
+        else:
+            if arch_key in sections:
+                del sections[arch_key]
+        new_body = generate_comment_body(sha, sections)
+
+    try:
+        patch_resp = requests.patch(comment_patch_url, headers=headers, json={"body": new_body}, timeout=30)
+        if patch_resp.status_code in (200, 201):
+            print(f"[WarningReporter] Successfully updated warning comment on {full_name}#{pr_number} for {arch_key}.")
+        else:
+            print(f"[WarningReporter] Failed to patch comment: {patch_resp.status_code} {patch_resp.text}")
+    except Exception as e:
+        print(f"[WarningReporter] Exception patching comment: {e}")
+
+# ====================================================================
 
 # 定义回调函数处理消息
 def callback(ch, method, properties, body):
@@ -115,6 +400,23 @@ def callback(ch, method, properties, body):
                                         else:
                                             print("Failed to upload commit status.")
                                             print(response.text)
+
+                                        # 处理 PR CI 构建警告日志并回写 PR 评论
+                                        try:
+                                            pr_number = resolve_pr_number(project, full_name, sha, github_token)
+                                            if pr_number:
+                                                print(f"[WarningReporter] Resolving warnings for {full_name} PR #{pr_number} ({repository}/{arch})...")
+                                                log_lines = fetch_obs_build_log(obs_host, obs_username, obs_password, project, repository, arch, package)
+                                                if log_lines is not None:
+                                                    w_count, w_text = extract_warnings_from_log(log_lines)
+                                                    print(f"[WarningReporter] Extracted {w_count} warnings from build log.")
+                                                    sync_pr_warning_comment(full_name, pr_number, sha, repository, arch, w_count, w_text, github_token)
+                                                else:
+                                                    print(f"[WarningReporter] Could not fetch log for {project}/{package}/{repository}/{arch}")
+                                            else:
+                                                print(f"[WarningReporter] Could not resolve PR number for {project}")
+                                        except Exception as e:
+                                            print(f"[WarningReporter] Error handling PR warning log: {e}")
                                     else:
                                         print("Failed to get pull_request head's repo")
                                 else:
@@ -174,8 +476,27 @@ def callback(ch, method, properties, body):
                     xml_string = ET.tostring(root, encoding="utf-8").decode("utf-8")
                     res = requests.put(url, auth=HTTPBasicAuth(obs_username, obs_password), data=xml_string)
 
-# 开始消费队列中的消息
-channel.basic_consume(queue=rabbitmq_queue, on_message_callback=callback, auto_ack=True)
+def main():
+    # 创建RabbitMQ连接
+    credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
+    parameters = pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port, credentials=credentials,
+                    heartbeat=0, connection_attempts=3, socket_timeout=300)
+    connection = pika.BlockingConnection(parameters)
+    channel = connection.channel()
 
-print('开始监控队列，按Ctrl+C退出')
-channel.start_consuming()
+    # 修改这里的参数值，使其与队列的当前设置相匹配
+    args = {
+        'durable': True  # 确保这里的值为True或False，与队列的当前设置相匹配
+    }
+
+    # 声明队列
+    channel.queue_declare(queue=rabbitmq_queue, durable=args['durable'], arguments=args)
+
+    # 开始消费队列中的消息
+    channel.basic_consume(queue=rabbitmq_queue, on_message_callback=callback, auto_ack=True)
+
+    print('开始监控队列，按Ctrl+C退出')
+    channel.start_consuming()
+
+if __name__ == '__main__':
+    main()
